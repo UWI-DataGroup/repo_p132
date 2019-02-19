@@ -1751,7 +1751,7 @@ tab beh if patient==1 ,m
 ** now save dataset with site included
 save "data\2014_cancer_sites_da.dta", replace
 
-
+/*
 ********************************************************************************
 ** 3.2 Now we want to do IR by site - first overall, then by sex: use TUMOURS not pts
 ********************************************************************************

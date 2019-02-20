@@ -3,7 +3,7 @@
  ******************************************************************************
  *
  *	GA-C D R C      A N A L Y S I S         C O D E
- *                                                              
+ *
  *  DO FILE: 		8_mortality_cancer_dc
  *					8th dofile: Mortality Data Prep
  *
@@ -16,7 +16,7 @@
  *  ANALYSIS: 		Preparing data for mortality section of annual report
  *
  * 	VERSION: 		version02 - 2014 ABSTRACTION PHASE
- *     
+ *
  *  SUPPORT: 		Natasha Sobers/Ian R Hambleton
  *
  ******************************************************************************
@@ -38,7 +38,7 @@ log using "logfiles\8_mort_cancer_2014_dc.smcl", replace
 set more off
 
 **************************************
-** DATA PREPARATION  
+** DATA PREPARATION
 **************************************
 ** LOAD the national registry deaths 2011-2016 dataset
 import excel using "data\raw\Cleaned_DeathData_2008-2017_JC_20180705_excel.xlsx" , firstrow case(lower) clear
@@ -68,11 +68,11 @@ count //23,452 - drop all not in 2014
 drop if (dod<d(01jan2014) | dod>d(31dec2014)) //21,006 obs deleted
 count //2,446
 
-** Strip possible leading/trailing blanks in cod1a 
+** Strip possible leading/trailing blanks in cod1a
 ** Create another cause field so that lists can be done alphabetically when checking below field 'mrcancer'
 replace cod1a = rtrim(ltrim(itrim(cod1a))) //0 changes
 count if regexm(cod1a,"^N ") //2,428
-gen tempcod1a=1 if regexm(cod1a,"^N ") 
+gen tempcod1a=1 if regexm(cod1a,"^N ")
 list deathid if tempcod1a==. //deathid 810 is unnatural so remove
 drop if deathid==810 //1 obs deleted
 
@@ -138,7 +138,7 @@ list cod1a if mrcancer==1 //689; 692
 /*
 	(1) below list with deathid taken from dofile 4 so re-check then update
 		mrcancer var as need be
-	(2) use obsid to check for CODs that incomplete in Results window with 
+	(2) use obsid to check for CODs that incomplete in Results window with
 		Data Editor in browse mode-copy and paste deathid below from here
 */
 sort deathid
@@ -242,7 +242,7 @@ list deathid placeofdeath if pod==.
 replace pod=2 if pod==. //211; 213
 
 drop placeofdeath
-tab pod ,m 
+tab pod ,m
 
 *****************
 **  Formatting **
@@ -251,7 +251,7 @@ tab pod ,m
 
 ** Need to check for duplicate death registrations
 ** First split full name into first, middle and last names
-** Also - code to split full name into 2 variables fname and lname - else can't merge! 
+** Also - code to split full name into 2 variables fname and lname - else can't merge!
 split pname, parse(", "" ") gen(name)
 order deathid pname name*
 
@@ -296,12 +296,12 @@ order deathid pname fname mname lname namematch
 sort deathid
 
 *************************
-** Checking & Removing ** 
+** Checking & Removing **
 **   Duplicate Death   **
 **    Registrations    **
 *************************
-/* 
-NB: These deaths were cleaned previously for importing into DeathData REDCapdb 
+/*
+NB: These deaths were cleaned previously for importing into DeathData REDCapdb
 so the field namematch can be used as a guide for checking duplicates
 	1=names match but different person
 	2=no name match
@@ -312,8 +312,8 @@ sort lname fname deathid
 quietly by lname fname : gen dupname = cond(_N==1,0,_n)
 sort lname fname deathid
 count if dupname>0 //6
-/* 
-Check below list for cases where namematch=no match but 
+/*
+Check below list for cases where namematch=no match but
 there is a pt with same name then:
  (1) check if same pt and remove duplicate pt;
  (2) check if same name but different pt and
@@ -325,14 +325,14 @@ replace namematch=1 if dupname>0 //6 changes
 
 preserve
 drop if nrn==""
-sort nrn 
+sort nrn
 quietly by nrn : gen dupnrn = cond(_N==1,0,_n)
 sort nrn deathid lname fname
 count if dupnrn>0 //0
 list deathid namematch fname lname nrn dod sex age if dupnrn>0
 restore
 
-** Final check for duplicates by name and dod 
+** Final check for duplicates by name and dod
 sort lname fname dod
 quietly by lname fname dod: gen dupdod = cond(_N==1,0,_n)
 sort lname fname dod deathid
@@ -431,7 +431,7 @@ gen site=1 if (regexm(cod1a, "LIP")	| regexm(cod1a, "MOUTH") | ///
 			   regexm(cod1a, "PHARYNGEAL CANCER"))
 ** 23 changes; 24
 
-replace site=2 if regexm(cod1a, "STOMACH") 
+replace site=2 if regexm(cod1a, "STOMACH")
 ** 9 changes
 
 replace site=3 if (regexm(cod1a, "COLON") | regexm(cod1a, "OF BOWEL") | ///
@@ -455,7 +455,7 @@ replace site=5 if (regexm(cod1a, "RECTUM") | regexm(cod1a, "RECTAL CARCINOMA") |
 replace site=6 if regexm(cod1a, "PANCREA") & site==.
 ** 30 changes
 
-replace site=7 if (regexm(cod1a, "GASTRIC CARCINOMA") | regexm(cod1a, "GASTRIC CANCER") | /// 
+replace site=7 if (regexm(cod1a, "GASTRIC CARCINOMA") | regexm(cod1a, "GASTRIC CANCER") | ///
 				  regexm(cod1a, "GASTRIC ADENO") | regexm(cod1a, "CANCER OF THE LIVER")  | ///
 				  regexm(cod1a, "LIVER CARCIN") | regexm(cod1a, "CARCINOMA OF LIVER") | ///
 				  regexm(cod1a, "GALL BLADDER") | regexm(cod1a, "GALLBLADDER") |  ///
@@ -474,16 +474,16 @@ replace site=7 if (regexm(cod1a, "GASTRIC CARCINOMA") | regexm(cod1a, "GASTRIC C
 				  regexm(cod1a, "CANCER OF OESOPHA") | regexm(cod1a, "OMA OF HEPATOBILIARY") | ///
 				  regexm(cod1a, "LIVER CANCER") | regexm(cod1a, "HEPATIC ADENOCARCIN") | ///
 				  regexm(cod1a, "PERIAMPULLARY MALIGN") | regexm(cod1a, "CANCER OF GASTRO-OESOPHAGEAL JUNC") | ///
-				  regexm(cod1a, "CANCER OF THE OESOPHA")) & site==. 	  
+				  regexm(cod1a, "CANCER OF THE OESOPHA")) & site==.
 ** 46 changes
-				  
+
 replace site=8 if (regexm(cod1a, "LUNG") | regexm(cod1a, "PLEURA") | ///
 				  regexm(cod1a, "LARYNX") | regexm(cod1a, "BRONCHOGENIC") | ///
 				  regexm(cod1a, "BRONCHOALVEOLAR CARCIN") | regexm(cod1a, "LARYNGEAL CANCER") | ///
 				  regexm(cod1a, "LARYNGEAL CARCINOMA") | regexm(cod1a, "SINONASAL CARCINOMA") | ///
-				  regexm(cod1a, "CANCER ETHMOID SINUS")) & site==. 
+				  regexm(cod1a, "CANCER ETHMOID SINUS")) & site==.
 ** 53 changes
-				  
+
 replace site=9 if (regexm(cod1a, "BONE") | regexm(cod1a, "OMA OF SKULL") | ///
 				  regexm(cod1a, "CANCER RIGHT MAXILLA")) & site==.
 ** 11 changes
@@ -492,19 +492,19 @@ replace site=10 if (regexm(cod1a, "MYELOMA") | regexm(cod1a, "MYELODYSPLASTIC") 
 				    regexm(cod1a, "LEUKAEMIA") | regexm(cod1a, "LEUKEMIA") | ///
 					regexm(cod1a, "HAEMA") | regexm(cod1a, "LYMPHO") | ///
 					regexm(cod1a, "HODGKIN") | regexm(cod1a, "MYELOFIBROSIS") | ///
-					regexm(cod1a, "MYELOPROLIFERATIVE")) & site==.	
+					regexm(cod1a, "MYELOPROLIFERATIVE")) & site==.
 ** 58 changes
-** JC 08oct2017: lymphomas & haem cancers are generally reported together so I've grouped these for 2013 since they were separate for 2008	
-	
-replace site=11 if regexm(cod1a, "MELANOMA") 
+** JC 08oct2017: lymphomas & haem cancers are generally reported together so I've grouped these for 2013 since they were separate for 2008
+
+replace site=11 if regexm(cod1a, "MELANOMA")
 ** 1 change
 
 replace site=12 if regexm(cod1a, "SKIN") & site==.
 ** 4 changes
-		
+
 replace site=13 if regexm(cod1a, "MESOTHE") & site==.
 ** 1 change
-				  
+
 replace site=14 if regexm(cod1a, "BREAST") & site==.
 ** 64 changes
 
@@ -516,27 +516,27 @@ replace site=16 if (regexm(cod1a, "UTER") | regexm(cod1a, "OMA OF THE VULVA") | 
 					regexm(cod1a, "ENDOMETRIAL CANC") | regexm(cod1a, "OF ENDOMETRIUM") | ///
 					regexm(cod1a, "OF THE ENDOMETRIUM")) & site==.
 ** 20 changes
-					
-replace site=17 if (regexm(cod1a, "OVARY") | regexm(cod1a, "OVARIAN") | ///				   
+
+replace site=17 if (regexm(cod1a, "OVARY") | regexm(cod1a, "OVARIAN") | ///
 				   regexm(cod1a, "GERM CELL")|regexm(cod1a, "VAGINAL CANCER") | ///
 				   regexm(cod1a, "VULVA CARCINOMA") | regexm(cod1a, "VULVAL CANCER") | ///
 				   regexm(cod1a, "VAGINAL CARCINOMA") | regexm(cod1a, "ENDOMETRIUM")) & site==.
 ** 4 changes
-				   
+
 replace site=18 if (regexm(cod1a, "PENILE") | regexm(cod1a, "OF THE TESTES") | ///
 					regexm(cod1a, "GERM CELL")) & site==.
 ** 3 changes
-					
+
 replace site=19 if regexm(cod1a, "PROSTAT") & site==.
 ** 137 changes; 139
-				  
-replace site=20 if (regexm(cod1a, "URIN") | regexm(cod1a, "BLADDER") | /// 
+
+replace site=20 if (regexm(cod1a, "URIN") | regexm(cod1a, "BLADDER") | ///
 					regexm(cod1a, "KIDNEY") | regexm(cod1a, "RENAL CELL CARCIN") | ///
 					regexm(cod1a, "RENAL CARCIN") | regexm(cod1a, "WILMS") | ///
 					regexm(cod1a, "TRANSITIONAL CELL") | regexm(cod1a, "RENAL CELL CANCER") | ///
 					regexm(cod1a, "OMA OF THE URETHRA")) & site==.
 ** 16 changes; 17
-					
+
 replace site=21 if (regexm(cod1a, "EYE") | regexm(cod1a, "BRAIN") | regexm(cod1a, "CEREBRO") | ///
 				   regexm(cod1a, "MENINGIO")  | regexm(cod1a, "INTRA-CRANIAL TUMOR") | ///
 				   regexm(cod1a, "OITUTARY") | regexm(cod1a, "CEREBRAL NEOPLASM") | ///
@@ -544,12 +544,12 @@ replace site=21 if (regexm(cod1a, "EYE") | regexm(cod1a, "BRAIN") | regexm(cod1a
 				   regexm(cod1a, "CEREBRAL ASTROCYTOMA") | regexm(cod1a, "GLIOBLASTOMA MULTIFORME") | ///
 				   regexm(cod1a, "NEUROBLASTOMA")) & site==.
 ** 2 changes
-				   
+
 replace site=22 if (regexm(cod1a, "THYROID") | regexm(cod1a, "ENDOCRIN") ) & site==.
 ** 5 changes
 
 ** site 23 is ill-defined sites which can be assigned when checking the unassigned (i.e. site==.) in below list
-		
+
 replace site=24 if (regexm(cod1a, "LYMPH NODE")) & site==.
 ** Lymph - Secondary and unspecified malignant neoplasm of lymph nodes
 **Excl.:malignant neoplasm of lymph nodes, specified as primary (C81-C86, C96.-)
@@ -558,7 +558,7 @@ replace site=24 if (regexm(cod1a, "LYMPH NODE")) & site==.
 replace site=25 if (regexm(cod1a, "OCCULT") | regexm(cod1a, "OMA OF UNKNOWN ORIGIN")) & site==.
 ** 14 changes
 
-label define site_lab 1 "C00-C14: lip, oral cavity & pharynx" 2 "C16: stomach"  3 "C18: colon" /// 
+label define site_lab 1 "C00-C14: lip, oral cavity & pharynx" 2 "C16: stomach"  3 "C18: colon" ///
   					  4 "C19: colon and rectum"  5 "C20-C21: rectum & anus" 6 "C25: pancreas" ///
 					  7 "C15, C17, C22-C24, C26: other digestive organs" ///
 					  8 "C30-C39: respiratory and intrathoracic organs" 9 "C40-41: bone and articular cartilage" ///
@@ -568,7 +568,7 @@ label define site_lab 1 "C00-C14: lip, oral cavity & pharynx" 2 "C16: stomach"  
 					  16 "C54,C55: uterus" 17 "C51-C52, C56-58: other female genital organs" ///
 					  18 "C60, C62, C63: male genital organs" 19 "C61: prostate" ///
 					  20 "C64-C68: urinary tract" 21 "C69-C72: eye, brain, other CNS" ///
-					  22 "C73-C75: thyroid and other endocrine glands"  /// 
+					  22 "C73-C75: thyroid and other endocrine glands"  ///
 					  23 "C76: other and ill-defined sites" ///
 					  24 "C77: lymph nodes" 25 "C80: unknown primary site"
 label var site "site of tumour"
@@ -657,7 +657,7 @@ replace site=10 if deathid==23539 & did=="T1" //1 change
 replace site=19 if deathid==23539 & did=="T2" //1 change
 
 ** Last check to ensure MPs have different sites
-duplicates list deathid, nolabel sepby(deathid) 
+duplicates list deathid, nolabel sepby(deathid)
 duplicates tag deathid, gen(mpsite)
 list deathid site if mpsite>0 ,sepby(deathid)
 
@@ -676,10 +676,10 @@ label define sex_lab 1 "male" 2 "female", modify
 label values sex sex_lab
 label var sex "Patient sex"
 
-** label parish 
-label define parish_lab 1 "Christ Church" 2 "St Andrew" 3 "St George" /// 
+** label parish
+label define parish_lab 1 "Christ Church" 2 "St Andrew" 3 "St George" ///
 					    4 "St James" 5 "St John" 6 "St Joseph" 7 "St Lucy" ///
-						8 "St Michael" 9 "St Peter" 10 "St Phillip" /// 
+						8 "St Michael" 9 "St Peter" 10 "St Phillip" ///
 						11 "St Thomas" 99 "ND" , modify
 label values parish parish_lab
 label var parish "parish"
@@ -702,7 +702,7 @@ replace yr1 = 99 if natregno=="99"
 order deathid nrn age yr yr1
 ** Initially need to run this code separately from entire dofile to determine which nrnyears should be '19' instead of '20' depending on age, e.g. for age 107 nrnyear=19
 replace yr1 = 19 if deathid==16127
-gen nrn = substr(natregno,1,6) 
+gen nrn = substr(natregno,1,6)
 destring nrn, replace
 format nrn %06.0f
 nsplit nrn, digits(2 2 2) gen(dyear month day)
@@ -756,7 +756,7 @@ count if age==. & dod!=. //0
 
 ** Check 59 - invalid (age<>dod-dob); checked no errors
 ** Age (at DEATH - to nearest year)
-gen dobnrn = substr(nrn,1,6) if nrn!="" 
+gen dobnrn = substr(nrn,1,6) if nrn!=""
 destring dobnrn, replace
 format dobnrn %06.0f
 nsplit dobnrn, digits(2 2 2) gen(year month day)
@@ -791,7 +791,7 @@ count if dod==. //0
 ***********************************
 ** Age labelling
 gen age5 = recode(age,4,9,14,19,24,29,34,39,44,49,54,59,64,69,74,79,84,200)
-recode age5 4=1 9=2 14=3 19=4 24=5 29=6 34=7 39=8 44=9 49=10 54=11 59=12 64=13 /// 
+recode age5 4=1 9=2 14=3 19=4 24=5 29=6 34=7 39=8 44=9 49=10 54=11 59=12 64=13 ///
 			69=14 74=15 79=16 84=17 200=18
 label define age5_lab 	1 "0-4"	   2 "5-9"    3 "10-14"		///
 						4 "15-19"  5 "20-24"  6 "25-29"		///
@@ -846,7 +846,7 @@ import excel using "L:\BNR_data\DM\data_cleaning\2014\cancer\versions\version02\
 count //1,040
 drop if deathid==. //431 obs deleted
 drop if dodyear!=2014 //187 obs deleted
-duplicates list deathid, nolabel sepby(deathid) 
+duplicates list deathid, nolabel sepby(deathid)
 duplicates tag deathid, gen(mpicd10)
 sort deathid cr5id
 list deathid topography morph ptrectot cr5id icd10 if mpicd10>0 ,sepby(deathid)
@@ -863,7 +863,7 @@ replace did="T2" if (deathid==5446 & icd10=="C61")|(deathid==14323 & icd10=="C20
 		|(deathid==19104 & icd10=="C509")|(deathid==19119 & icd10=="C20") ///
 		|(deathid==19431 & icd10=="C139")|(deathid==20806 & icd10=="C153")
 ** 6 changes
-		
+
 //need to update 'did' variable for those whose cr5id!="T1S1" and not a MP
 sort deathid cr5id
 list deathid cr5id icd10 if cr5id!="T1S1" & mpicd10>0 & did==""
@@ -903,7 +903,7 @@ list cod1a if deathid==8621|deathid==8711|deathid==6944
 ** kidney(1), prostate(2)
 count //648; 651
 merge m:m deathid did using "data\clean\2014_deaths_icd10_dc.dta"
-/* 
+/*
 1st merge attempt
     Result                           # of obs.
     -----------------------------------------
@@ -935,7 +935,7 @@ duplicates tag deathid, gen(unmatched)
 sort deathid cr5id
 
 ** Assign topography and icd10 codes to unmatched/unmerged deaths that are MPs
-** Assign morphology and icd10 codes to haem & lymph. cancers for unmatched deaths that are MPs 
+** Assign morphology and icd10 codes to haem & lymph. cancers for unmatched deaths that are MPs
 **(use excel '2018-12-05_iarccrg_icd10_conversion code.xlsx' in raw data to filter by top to assign icd10)
 list deathid did topography morph cr5id site _merge icd10 if unmatched>0 & icd10=="" ,sepby(deathid)
 list cod1a if unmatched>0 & icd10==""
@@ -974,7 +974,7 @@ replace icd10="C64" if topography==649 & icd10=="" //1 change
 
 replace icd10="C859" if morph==9590 & icd10=="" //1 change
 
-** Now check how many missing topography codes 
+** Now check how many missing topography codes
 tab topography ,m
 tab morph ,m
 tab icd10 ,m
@@ -1430,11 +1430,61 @@ replace sitecr5db=32 if siteiarc==64 //0 changes
 
 tab sitecr5db ,m
 
+** Create ICD-10 groups according to Angie's previous site labels but more standardized site assignment based on all ICD-10 not mixtured of ICD-10 & ICD-O-3 (added after analysis dofiles 4,6)
+tab icd10 ,m
+gen sitear=.
+label define sitear_lab 1 "C00-C14: lip, oral cavity & pharynx" 2 "C16: stomach"  3 "C18: colon" ///
+  					  4 "C19: colon and rectum"  5 "C20-C21: rectum & anus" 6 "C25: pancreas" ///
+					  7 "C15, C17, C22-C24, C26: other digestive organs" ///
+					  8 "C30-C39: respiratory and intrathoracic organs" 9 "C40-41: bone and articular cartilage" ///
+					  10 "C42,C77: haem & lymph systems" ///
+					  11 "C43: melanoma & reportable skin cancers" 12 "C44: skin (non-reportable)" ///
+					  13 "C45-C49: mesothelial and soft tissue" 14 "C50: breast" 15 "C53: cervix" ///
+					  16 "C54,55: uterus" 17 "C51-C52, C56-58: other female genital organs" ///
+					  18 "C60, C62, C63: male genital organs" 19 "C61: prostate" ///
+					  20 "C64-C68: urinary tract" 21 "C69-C72: eye, brain, other CNS" ///
+					  22 "C73-C75: thyroid and other endocrine glands"  ///
+					  23 "C76: other and ill-defined sites" ///
+					  24 "C77: lymph nodes" 25 "C80: unknown primary site"
+label var sitear "site of tumour"
+label values sitear site_lab
+
+replace sitear=1 if (regexm(icd10,"C00")|regexm(icd10,"C01")|regexm(icd10,"C02") ///
+					 |regexm(icd10,"C03")|regexm(icd10,"C04")|regexm(icd10,"C05") ///
+					 |regexm(icd10,"C06")|regexm(icd10,"C07")|regexm(icd10,"C08") ///
+					 |regexm(icd10,"C09")|regexm(icd10,"C10")|regexm(icd10,"C11") ///
+					 |regexm(icd10,"C12")|regexm(icd10,"C13")|regexm(icd10,"C14")) //34 changes
+replace sitear=2 if regexm(icd10,"C16") //23 changes
+replace sitear=3 if regexm(icd10,"C18") //131 changes
+replace sitear=4 if regexm(icd10,"C19") //5 changes
+replace sitear=5 if (regexm(icd10,"C20")|regexm(icd10,"C21")) //28 changes
+replace sitear=6 if regexm(icd10,"C25") //23 changes
+replace sitear=7 if (regexm(icd10,"C15")|regexm(icd10,"C17")|regexm(icd10,"C22")|regexm(icd10,"C23")|regexm(icd10,"C24")|regexm(icd10,"C26")) //40 changes
+replace sitear=8 if (regexm(icd10,"C30")|regexm(icd10,"C31")|regexm(icd10,"C32")|regexm(icd10,"C33")|regexm(icd10,"C34")|regexm(icd10,"C37")|regexm(icd10,"C38")|regexm(icd10,"C39")) //57 changes
+replace sitear=9 if (regexm(icd10,"C40")|regexm(icd10,"C41")) //3 changes
+replace sitear=10 if sitecr5db==21|sitecr5db==22|sitecr5db==30|sitecr5db==31 //73 changes
+replace sitear=11 if siteiarc==24 //7 changes
+replace sitear=12 if siteiarc==25 //0 changes
+replace sitear=13 if (regexm(icd10,"C45")|regexm(icd10,"C46")|regexm(icd10,"C47")|regexm(icd10,"C48")|regexm(icd10,"C49")) //12 changes
+replace sitear=14 if regexm(icd10,"C50") //174 changes
+replace sitear=15 if regexm(icd10,"C53") //21 changes
+replace sitear=16 if (regexm(icd10,"C54")|regexm(icd10,"C55")) //49 changes
+replace sitear=17 if (regexm(icd10,"C51")|regexm(icd10,"C52")|regexm(icd10,"C56")|regexm(icd10,"C57")|regexm(icd10,"C58")) //14 changes
+replace sitear=18 if (regexm(icd10,"C60")|regexm(icd10,"C62")|regexm(icd10,"C63")) //5 changes
+replace sitear=19 if regexm(icd10,"C61") //216 changes
+replace sitear=20 if (regexm(icd10,"C64")|regexm(icd10,"C65")|regexm(icd10,"C66")|regexm(icd10,"C67")|regexm(icd10,"C68")) //37 changes
+replace sitear=21 if (regexm(icd10,"C69")|regexm(icd10,"C70")|regexm(icd10,"C71")|regexm(icd10,"C72")) //6 changes
+replace sitear=22 if (regexm(icd10,"C73")|regexm(icd10,"C74")|regexm(icd10,"C75")) //12 changes
+replace sitear=23 if regexm(icd10,"C76") //3 changes
+**replace sitear=24 if  // captured in sitear 10
+replace sitear=25 if regexm(icd10,"C80") //43 changes
+
+tab sitear ,m //0 missing
 
 drop cod1b cod1c cod1d cod2a cod2b onsetnumcod1b onsettxtcod1b onsetnumcod1c ///
 	 onsettxtcod1c onsetnumcod1d onsettxtcod1d onsetnumcod2a onsettxtcod2a ///
 	 onsetnumcod2b onsettxtcod2b death_certificate_complete tempcod1a
-	 
+
 order deathid did fname lname age age5 age_10 sex dob nrn parish dod dodyear mrcancer siteiarc siteiarchaem site pod cod1a
 
 count // 651

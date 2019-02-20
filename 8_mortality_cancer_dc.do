@@ -1430,6 +1430,7 @@ replace sitecr5db=32 if siteiarc==64 //0 changes
 
 tab sitecr5db ,m
 
+
 ** Create ICD-10 groups according to Angie's previous site labels but more standardized site assignment based on all ICD-10 not mixtured of ICD-10 & ICD-O-3 (added after analysis dofiles 4,6)
 tab icd10 ,m
 gen sitear=.

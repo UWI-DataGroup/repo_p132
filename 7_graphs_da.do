@@ -3,7 +3,7 @@
  ******************************************************************************
  *
  *	GA-C D R C      A N A L Y S I S         C O D E
- *                                                              
+ *
  *  DO FILE: 		7_graphs_da
  *					7th dofile:  Graphs for annual report
  *								  - Fig.1: Tumours by month and sex
@@ -12,7 +12,7 @@
  *	 							  - Fig 4: death by site
  *					The code herein is based on AMC Rose's 2008 analysis code
  *					but, instead of using AR's site classification, IARC's site
- *					classification created by J Campbell in 2014 cleaning 
+ *					classification created by J Campbell in 2014 cleaning
  *					dofile "5_merge_cancer_dc"
  *
  *	STATUS:			Completed
@@ -24,7 +24,7 @@
  *  ANALYSIS: 		Cancer 2014 dataset for annual report
  *
  * 	VERSION: 		version01 - 2014 ABSTRACTION PHASE
- *     
+ *
  *  SUPPORT: 		Natasha Sobers/Ian R Hambleton
  *
  ******************************************************************************
@@ -51,7 +51,7 @@ set more off
 * ************************************************************************
 * ANALYSIS: GRAPHS: ALL for Annual Report
 * Covering
-* Fig 1: Tumours by month and sex 
+* Fig 1: Tumours by month and sex
 ** EXTRA FOR TM PRESENTATION CARPHA 2015: Tumours by age-group and sex
 ** also do patients by age-group and sex as not sure which she prefers
 * Note: Fig 2: los/survival already done in 5_section4
@@ -75,7 +75,7 @@ rename monset month
 ** Shift is one-half the width of the bars (which has been set at 0.5 in graph code)
 gen monthnew = month
 replace monthnew = month+0.25 if sex==2
-label define monthnew_lab 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" 7 "Jul" /// 
+label define monthnew_lab 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" 7 "Jul" ///
 				  8 "Aug" 9 "Sep" 10 "Oct" 11 "Nov" 12 "Dec" ,modify
 label values monthnew monthnew_lab
 
@@ -85,27 +85,30 @@ sort sex monthnew
 graph twoway 	(bar case monthnew if sex==2, yaxis(1) col(lavender) barw(0.5) )
 				(bar case monthnew if sex==1, yaxis(1) col(magenta*0.5)  barw(0.5) ),
 			/// Making background completely white
-			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin)) 
-			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin)) 
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
+
 	       	xlabel(1 2 3 4 5 6 7 8 9 10 11 12, valuelabel
 	       	labs(large) nogrid glc(gs12) angle(45))
-	       	xtitle("Month", size(large) margin(t=3)) 
+	       	xtitle("Month", size(large) margin(t=3))
 			xscale(range(1(1)12))
 			xmtick(1(1)12)
 
 			ylab(0(10)50, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(large) margin(r=3))
 			ymtick(0(5)50)
-			
+			/// title info
+			title("Figure 1. Number of tumours in male and female cancer patients by month, Barbados, 2014 (N=927)", size(vlarge) margin(medium) color(white) fcolor(lavender) lcolor(black) box)
 			/// Legend information
 			legend(size(medlarge) nobox position(11) colf cols(2)
 			region(color(gs16) ic(gs16) ilw(thin) lw(thin)) order(1 2)
-			lab(1 "Number of tumours (men)") 
+			lab(1 "Number of tumours (men)")
 			lab(2 "Number of tumours (women)")
-			);
+			)
+			name(figure9, replace)
+			;
 #delimit cr
 restore
 
@@ -119,7 +122,7 @@ rename age_10 agegrp
 ** Shift is one-half the width of the bars (which has been set at 0.5 in graph code)
 gen agenew = agegrp
 replace agenew = agegrp+0.25 if sex==2
-label define agenew_lab 1 "0-14" 2 "15-24" 3 "25-34" 4 "35-44" 5 "45-54" 6 "55-64" 7 "65-74" /// 
+label define agenew_lab 1 "0-14" 2 "15-24" 3 "25-34" 4 "35-44" 5 "45-54" 6 "55-64" 7 "65-74" ///
 				  8 "75-84" 9 "85 & over" ,modify
 label values agenew agenew_lab
 
@@ -128,28 +131,31 @@ sort sex agenew
 #delimit ;
 graph twoway 	(bar case agenew if sex==2, yaxis(1) col(orange) barw(0.5) )
 				(bar case agenew if sex==1, yaxis(1) col(blue*1.5)  barw(0.5) ),
-			/// Making background completely white
-			plotregion(c("231 231 240") ic("231 231 240") ilw(thin) lw(thin)) 
-			graphregion(color("231 231 240") ic("231 231 240") ilw(thin) lw(thin)) 
+			/// Making background white
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
+
 	       	xlabel(1 2 3 4 5 6 7 8 9, valuelabel
 	       	labs(large) nogrid glc(gs12) angle(45))
-	       	xtitle("Age-group (years)", size(large) margin(t=3)) 
+	       	xtitle("Age-group (years)", size(large) margin(t=3))
 			xscale(range(1(1)9))
 			xmtick(1(1)9)
 
 			ylab(0(30)180, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(large) margin(r=3))
 			ymtick(0(15)180)
-			
+			/// title info
+			title("Figure ?. Number of tumours in male and female cancer patients by age group," "Barbados, 2014 (N=912)", size(huge) margin(medium) color(white) fcolor(lavender) lcolor(black) box)
 			/// Legend information
 			legend(size(medlarge) nobox position(11) colf cols(2)
 			region(color("231 231 240") ic("231 231 240") ilw(thin) lw(thin)) order(1 2)
-			lab(1 "Number of tumours (men)") 
+			lab(1 "Number of tumours (men)")
 			lab(2 "Number of tumours (women)")
-			);
+			)
+			name(figure10, replace)
+			;
 #delimit cr
 restore
 
@@ -165,7 +171,7 @@ rename age_10 agegrp
 ** Shift is one-half the width of the bars (which has been set at 0.5 in graph code)
 gen agenew = agegrp
 replace agenew = agegrp+0.25 if sex==2
-label define agenew_lab 1 "0-14" 2 "15-24" 3 "25-34" 4 "35-44" 5 "45-54" 6 "55-64" 7 "65-74" /// 
+label define agenew_lab 1 "0-14" 2 "15-24" 3 "25-34" 4 "35-44" 5 "45-54" 6 "55-64" 7 "65-74" ///
 				  8 "75-84" 9 "85 & over" ,modify
 label values agenew agenew_lab
 
@@ -175,34 +181,37 @@ sort sex agenew
 graph twoway 	(bar case agenew if sex==2, yaxis(1) col(lavender) barw(0.5) )
 				(bar case agenew if sex==1, yaxis(1) col(magenta*0.5)  barw(0.5) ),
 			/// Making background completely white
-			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin)) 
-			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin)) 
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
+
 	       	xlabel(1 2 3 4 5 6 7 8 9, valuelabel
 	       	labs(large) nogrid glc(gs12) angle(45))
-	       	xtitle("Age-group (years)", size(large) margin(t=3)) 
+	       	xtitle("Age-group (years)", size(large) margin(t=3))
 			xscale(range(1(1)9))
 			xmtick(1(1)9)
 
 			ylab(0(30)180, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(large) margin(r=3))
 			ymtick(0(15)180)
-			
+			/// title info
+			title("Figure ?. Number of tumours in male and female cancer patients by age group," "Barbados, 2014 (N=912)", size(huge) margin(medium) color(white) fcolor(lavender) lcolor(black) box)
 			/// Legend information
 			legend(size(medlarge) nobox position(11) colf cols(2)
 			region(color(gs16) ic(gs16) ilw(thin) lw(thin)) order(1 2)
-			lab(1 "Number of patients (men)") 
+			lab(1 "Number of patients (men)")
 			lab(2 "Number of patients (women)")
-			);
+			)
+			name(figure11, replace)
+			;
 #delimit cr
 restore
 
-*** 
+***
 ** Now do breast and prostate cancer by age-group - just for tumours
 preserve
-drop if siteiarc!=29 // BC
+drop if sitear!=14 // BC
 collapse (sum) case , by(age_10)
 rename age_10 agegrp
 sort agegrp
@@ -210,31 +219,34 @@ sort agegrp
 #delimit ;
 graph twoway (bar case agegrp , yaxis(1) col(magenta*0.5)  barw(0.5) ),
 			/// Making background completely white
-			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin)) 
-			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin)) 
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
+
 	       	xlabel(1 2 3 4 5 6 7 8 9, valuelabel
 	       	labs(large) nogrid glc(gs12) angle(45))
-	       	xtitle("Age-group (years)", size(large) margin(t=3)) 
+	       	xtitle("Age-group (years)", size(large) margin(t=3))
 			xscale(range(1(1)9))
 			xmtick(1(1)9)
 
 			ylab(0(5)30, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(large) margin(r=3))
 			ymtick(0(5)30)
-			
+			/// title info
+			title("Figure ?. Number of breast cancers by age group, Barbados, 2014 (N=912)", size(huge) margin(medium) color(white) fcolor(lavender) lcolor(black) box)
 			/// Legend information
 			legend(size(medlarge) nobox position(11) colf cols(1)
 			region(color(gs16) ic(gs16) ilw(thin) lw(thin)) order(1)
 			lab(1 "Number of tumours (women)")
-			);
+			)
+			name(figure12, replace)
+			;
 #delimit cr
 restore
 
 preserve
-drop if siteiarc!=39 // PC
+drop if sitear!=19 // PC
 collapse (sum) case , by(age_10)
 rename age_10 agegrp
 sort agegrp
@@ -242,26 +254,29 @@ sort agegrp
 #delimit ;
 graph twoway (bar case agegrp , yaxis(1) col(lavender)  barw(0.5) ),
 			/// Making background completely white
-			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin)) 
-			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin)) 
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
+
 	       	xlabel(1 2 3 4 5 6 7 8 9, valuelabel
 	       	labs(large) nogrid glc(gs12) angle(45))
-	       	xtitle("Age-group (years)", size(large) margin(t=3)) 
+	       	xtitle("Age-group (years)", size(large) margin(t=3))
 			xscale(range(1(1)9))
 			xmtick(1(1)9)
 
 			ylab(0(10)80, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(large) margin(r=3))
 			ymtick(0(5)80)
-			
+			/// title info
+			title("Figure ?. Number of prostate cancers by age group, Barbados, 2014 (N=912)", size(huge) margin(medium) color(white) fcolor(lavender) lcolor(black) box)
 			/// Legend information
 			legend(size(medlarge) nobox position(11) colf cols(1)
 			region(color(gs16) ic(gs16) ilw(thin) lw(thin)) order(1)
 			lab(1 "Number of tumours (men)")
-			);
+			)
+			name(figure13, replace)
+			;
 #delimit cr
 restore
 
@@ -281,30 +296,33 @@ label define cod2_lab 1 "cancer" 2 "non-cancer" 3 "unknown"
 label values cod cod2_lab
 
 #delimit ;
-graph twoway 	(bar case cod , yaxis(1) col("255 150 30") barw(0.5) ),
-			/// Making background grey
-			plotregion(c("231 231 240") ic("231 231 240") ilw(thin) lw(thin)) 
-			graphregion(color("231 231 240") ic("231 231 240") ilw(thin) lw(thin)) 
+graph twoway 	(bar case cod , yaxis(1) col("lavender") barw(0.5) ),
+			/// Making background white
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
-	       	xlabel(1 2 3 , valuelabel
-		
+
+	       	xlabel(1 2 , valuelabel
+
 	       	labs(large) nogrid glc("231 231 240") angle(0))
-	       	xtitle("Cause of death", size(vlarge) margin(t=3)) 
+	       	xtitle("Cause of death", size(vlarge) margin(t=3))
 			//xscale(range(1(1)3))
 			//xmtick(1(1)3)
 
 			ylab(0(100)400, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(vlarge) margin(r=3))
 			ymtick(0(50)400)
-			
+			/// title info
+			title("Figure 4. Cause of death for 474 cancer patients diagnosed in 2014 who died" "by 31 December 2017, Barbados", size(huge) margin(medium) color(white) fcolor(lavender) lcolor(black) box)
 			/// Legend information
 			legend(off size(medlarge) nobox position(11) colf cols(2)
 			region(color(gs16) ic(gs16) ilw(thin) lw(thin)) order(1 2)
-			lab(1 "Number of tumours (men)") 
+			lab(1 "Number of tumours (men)")
 			lab(2 "Number of tumours (women)")
-			);
+			)
+			name(figure14, replace)
+			;
 #delimit cr
 
 restore
@@ -316,63 +334,67 @@ restore
 
 preserve
 use "data\2014_cancer_rx_outcomes_da.dta", clear
-sort sex siteiarc
+sort sex sitear
 keep if deceased==1 & dodyear<2018
 drop if cod!=1
-collapse (sum) case , by(siteiarc)
-sort siteiarc
+count //476
+collapse (sum) case , by(sitear)
+sort sitear
 
 ** These will be difficult to show on a chart so let's re-input into more
 ** amenable names
 
 drop _all
 input id site2 case
-1	1	85	// colorectal (colon 65, rectum 19, anus 1)
-2	2	37  // uterus (1), cervix (7), corpus (22), other female genital organs (7)
+1	1	85	// colorectal (colon 65, rectum and colon 2, rectum 18)
+2	2	37  // uterus (23), cervix (7), other female genital organs (7)
 3   3   50	// lymphoid/blood (50)
-4	4	66	// prostate (64), msg (2)
-5	5	46  // stomach (17), other digestive organs (29)
+4	4	64	// prostate (64)
+5	5	48  // stomach (17), other digestive organs (31)
 6	6	51	// breast (51)
 7   7   35  // respiratory and intra-thoracic (35)
-8   8   20  // pancreas (20)
+8   8   20  // pancreas  (20)
 9   9   13  // head & neck (lip etc.)(13)
 10  10  15  // urinary tract (15)
-11  11  15  // brain (4) bone/skin/tissue (8) thyroid (3)
-12  12  43  // o&u (43)
+11  11  22  // other (bone 1, skin 3, meso 7, mgs 2, brain 4, thyroid 3, ill defined 2)
+12  12  36  // psu (unk)(36)
 end
 
 sort site2
-label define site2_lab 1 "Colorectal" 2 "Uterus, OFG" 3 "Prostate, OMG" 4 "Lymph/blood" ///
+label define site2_lab 1 "Colorectal" 2 "Uterus, OFG" 3 "Prostate" 4 "Lymph/blood" ///
 					   5 "Stomach+other GI" 6 "Breast" 7 "Respiratory" ///
 					   8 "Pancreas" 9 "Head & Neck"  10 "Urinary tract" ///
-					   11 "Brain/Bone/Skin/Thyroid" 12 "O&U"
+					   11 "Other" 12 "PSU (unk)"
 label values site2 site2_lab
 
 #delimit ;
 graph twoway 	(bar case site if site<7 , yaxis(1) col(lavender) barw(0.5) ),
 			/// Making background completely white
-			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin)) 
-			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin)) 
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
+
 	       	xlabel(1 2 3 4 5 6, valuelabel
-		
+
 	       	labs(large) nogrid glc(gs12) angle(0))
-	       	xtitle("", size(vlarge) margin(t=3)) 
+	       	xtitle("", size(vlarge) margin(t=3))
 			//xscale(range(1(1)3))
 			//xmtick(1(1)3)
 
 			ylab(0(20)80, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(large) margin(r=3))
 			ymtick(0(10)80)
-			
+			/// title info
+			title("Figure 5. Site of cancer for 476 fatal tumours diagnosed in 2014 which caused" "death within 3 years, Barbados", size(huge) margin(medium) color(white) fcolor(lavender) lcolor(black) box)
 			/// Legend information
 			legend(off size(medlarge) nobox position(11) colf cols(2)
 			region(color(gs16) ic(gs16) ilw(thin) lw(thin)) order(1 2)
-			lab(1 "Number of tumours (men)") 
+			lab(1 "Number of tumours (men)")
 			lab(2 "Number of tumours (women)")
-			);
+			)
+			name(figure15, replace)
+			;
 #delimit cr
 
 
@@ -380,28 +402,30 @@ graph twoway 	(bar case site if site<7 , yaxis(1) col(lavender) barw(0.5) ),
 #delimit ;
 graph twoway 	(bar case site if site>6 , yaxis(1) col(lavender) barw(0.5) ),
 			/// Making background completely white
-			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin)) 
-			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin)) 
+			plotregion(c(gs16) ic(gs16) ilw(thin) lw(thin))
+			graphregion(color(gs16) ic(gs16) ilw(thin) lw(thin))
 			/// and insist on a long thin graphic
 			ysize(2)
-			
+
 	       	xlabel(7 8 9 10 11 12, valuelabel
-		
+
 	       	labs(large) nogrid glc(gs12) angle(0))
-	       	xtitle("Site of tumour", size(vlarge) margin(t=3)) 
+	       	xtitle("Site of tumour", size(vlarge) margin(t=3))
 			//xscale(range(1(1)3))
 			//xmtick(1(1)3)
 
 			ylab(0(20)80, labs(large) nogrid glc(gs12) angle(0) format(%9.0f))
-	       	ytitle("Number of tumours", size(large) margin(r=3)) 
+	       	ytitle("Number of tumours", size(large) margin(r=3))
 			ymtick(0(10)80)
-			
+
 			/// Legend information
 			legend(off size(medlarge) nobox position(11) colf cols(2)
 			region(color(gs16) ic(gs16) ilw(thin) lw(thin)) order(1 2)
-			lab(1 "Number of tumours (men)") 
+			lab(1 "Number of tumours (men)")
 			lab(2 "Number of tumours (women)")
-			);
+			)
+			name(figure16, replace)
+			;
 #delimit cr
 
 restore
@@ -414,7 +438,7 @@ restore
 preserve
 use "data\2013_updated_cancer_dataset_site_cod.dta", clear
 sort sex cod
-keep if deceased==1 & year<2017 //457 deleted 
+keep if deceased==1 & year<2017 //457 deleted
 ** JC: one (1) pt died in 2017 with cod=3 (NK) incl. in deletions above
 
 keep eid deathid case age* sex year cod causeofdeath treatment*
@@ -457,5 +481,3 @@ list causeofdeath cod if hrt==. & cod==2
 count if hrt==. & cod==9 //0 as of 10oct2017
 list causeofdeath cod if hrt==. & cod==9
 */
-
-

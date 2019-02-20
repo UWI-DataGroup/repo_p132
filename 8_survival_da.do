@@ -3,12 +3,12 @@
 ******************************************************************************
  *
  *	GA-C D R C      A N A L Y S I S         C O D E
- *                                                              
+ *
  *  DO FILE: 		8_survival_da
  *					8th dofile:  Survial analysis to 3 years
  *					The code herein is based on AMC Rose's 2008 analysis code
  *					but, instead of using AR's site classification, IARC's site
- *					classification created by J Campbell in 2014 cleaning 
+ *					classification created by J Campbell in 2014 cleaning
  *					dofile "5_merge_cancer_dc"
  * 					(first version for this analysis of survival as per Bristol),
  *					noted by AR 02-jun-2015
@@ -22,7 +22,7 @@
  *  ANALYSIS: 		Cancer 2014 dataset for annual report
  *
  * 	VERSION: 		version01 - 2014 ABSTRACTION PHASE
- *     
+ *
  *  SUPPORT: 		Natasha Sobers/Ian R Hambleton
  *
  ******************************************************************************
@@ -82,7 +82,7 @@ tab dot ,m // none missing dot
 
 ** set study end date variable as 3 years from dx date IF PT HAS NOT DIED
 gen end_date=(dot+(365.25*3)) if dot!=. // note 2008 was a leap year so pt dx on 01 jan 2008
-                              //  actually has an end date on 31dec2012!						  
+                              //  actually has an end date on 31dec2012!
 							  // 2014 was NOT a leap year so ignore above
 format end_date %dD_m_CY
 
@@ -122,18 +122,18 @@ list pid deathid dot dod if dod!=. & dod>dot+(365.25*3)
 */
 
 replace deceased=0 if dod!=. & dod>dot+(365.25*3) // 14 changes
-	
+
 tab deceased ,m //dead=474, "alive"=438
 
 ** set to missing those who have dod>3 years from incidence date - but
 ** first create new variable for time to death/date last seen, called "time"
 
 ** (2) use dod to define time to death if died within 3 yrs
-gen time=dod-dot if (dod!=. & deceased==1 & dod<dot+(365.25*3)) 
+gen time=dod-dot if (dod!=. & deceased==1 & dod<dot+(365.25*3))
 ** 438 missing values generated
 
 ** (3) next use 3 yrs as time, if died >3 yrs from incidence
-replace time=end_date-dot if (end_date<dod & dod!=. & deceased==1) 
+replace time=end_date-dot if (end_date<dod & dod!=. & deceased==1)
 ** 0 changes
 
 ** (4) next use dlc as end date, if alive and have date last seen (dlc)
@@ -178,7 +178,7 @@ list pid deathid dot end_date dod deceased dlc if end_date<dod & dod!=.
 907. | 20141240     20030   08 Jul 2014   07 Jul 2017   28 Jul 2017          0   15 Sep 2014 |
      +---------------------------------------------------------------------------------------+
 */
-** change dod to missing (deceased already set to 0 above) 
+** change dod to missing (deceased already set to 0 above)
 ** as they did not die within 3 years
 count if end_date<dod & dod!=. //14
 replace dod=. if end_date<dod & dod!=. //14 changes; 14 to missing
@@ -208,7 +208,7 @@ restore
 ** UNLESS they died before end_date or were last seen before end_date in which case
 ** they should be censored... so now we create a NEW end_date as a combination of
 ** the above
-sort dot 
+sort dot
 sort pid
 
 list pid dot deceased dod dlc end_date
@@ -290,9 +290,49 @@ tab _st // 757 observations contribute to analysis
 
 stdes
 
-sts graph 
+** Updated by JC 20feb2019
+sts graph, ytitle("Proportion of patients surviving", size(medlarge)) yscale(titlegap(*10)) xtitle("Years since diagnosis", size(medlarge)) title("Figure 2. Kaplan-Meier survival rates from cancer for patients diagnosed in 2014, Barbados", size(small) margin(medium) color(white) fcolor(lavender) lcolor(black) box) name(figure6)
+
+sts graph , by(sex) ytitle("Proportion of patients surviving", size(medlarge)) yscale(titlegap(*10)) xtitle("Years since diagnosis", size(medlarge)) title("Figure 3. Kaplan-Meier survival rates from cancer for patients diagnosed in 2014, Barbados," "by sex", size(small) margin(medium) color(white) fcolor(lavender) lcolor(black) box) name(figure7)
+
+** just for main sites - using AR's site groupings
+preserve
+gen newsite=1 if sitear==19 // prostate
+replace newsite=2 if sitear==14 // breast
+replace newsite=3 if sitear>1 & sitear<8 // GI
+replace newsite=4 if sitear==10 // blood & lymph
+keep if newsite<5
+label define newsite_lab 1 "prostate" 2 "breast" 3 "GI"  4 "blood & lymphoid"
+label values newsite newsite_lab
+
+sts graph , by(newsite) xtitle("Years since diagnosis", size(medlarge)) title("Figure 6. Three-year Kaplan-Meier survival rates from cancer for patients diagnosed in 2014," "for four general sites (diagnosed in 70% of patients), Barbados (N=912)", size(small) margin(medium) color(white) fcolor(lavender) lcolor(black) box) name(figure8)
+restore
+
+count if sitear==19|sitear==14|(sitear>1 & sitear<8)|sitear==10 //637
+count if sitear!=. //912
+** N=912 so 4 general sites make up 70% of patients (637/912*100)
+
+gen newtime2=int(time/365.25) // 0 missing values generated
+tab newtime2 deceased ,m
+
+/*
+sts graph
 
 sts graph , by(sex)
+
+
+** just for main sites - using AR's site groupings
+preserve
+gen newsite=1 if sitear==19 // prostate
+replace newsite=2 if sitear==14 // breast
+replace newsite=3 if sitear>1 & sitear<8 // GI
+replace newsite=4 if sitear==10 // blood & lymph
+keep if newsite<5
+label define newsite_lab 1 "prostate" 2 "breast" 3 "GI"  4 "blood & lymphoid"
+label values newsite newsite_lab
+
+sts graph , by(newsite)
+restore
 
 ** just for main sites
 preserve
@@ -301,7 +341,7 @@ replace newsite=2 if siteiarc==29 // breast
 replace newsite=3 if siteiarc>9 & siteiarc<19 // GI
 replace newsite=4 if siteiarc>51 & siteiarc<61 // blood & lymph
 keep if newsite<5
-label define newsite_lab 1 "prostate" 2 "breast" 3 "GI"  4 "lymphoid and blood" 
+label define newsite_lab 1 "prostate" 2 "breast" 3 "GI"  4 "lymphoid and blood"
 label values newsite newsite_lab
 
 sts graph , by(newsite)

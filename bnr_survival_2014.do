@@ -390,3 +390,37 @@ sort _t
         name(figure5)
         ;
 #delimit cr
+
+** For 2014 annual report, JC added below in (20feb2019) from AR's original dofile
+** Now survival time set the dataset using newend_date as the time variable and deceased
+** as the failure variable
+
+stset newend_date , failure(deceased) origin(dot) scale(365.25)
+
+tab _st // 757 observations contribute to analysis
+
+stdes
+
+sts graph, ytitle("Proportion of patients surviving", size(medlarge)) yscale(titlegap(*10)) xtitle("Years since diagnosis", size(medlarge)) title("Figure 2. Kaplan-Meier survival rates from cancer for patients diagnosed in 2014, Barbados", size(small) margin(medium) color(white) fcolor(lavender) lcolor(black) box) name(figure6)
+
+sts graph , by(sex) ytitle("Proportion of patients surviving", size(medlarge)) yscale(titlegap(*10)) xtitle("Years since diagnosis", size(medlarge)) title("Figure 3. Kaplan-Meier survival rates from cancer for patients diagnosed in 2014, Barbados," "by sex", size(small) margin(medium) color(white) fcolor(lavender) lcolor(black) box) name(figure7)
+
+** just for main sites - using AR's site groupings
+preserve
+gen newsite=1 if sitear==19 // prostate
+replace newsite=2 if sitear==14 // breast
+replace newsite=3 if sitear>1 & sitear<8 // GI
+replace newsite=4 if sitear==10 // blood & lymph
+keep if newsite<5
+label define newsite_lab 1 "prostate" 2 "breast" 3 "GI"  4 "blood & lymphoid"
+label values newsite newsite_lab
+
+sts graph , by(newsite) xtitle("Years since diagnosis", size(medlarge)) title("Figure 6. Three-year Kaplan-Meier survival rates from cancer for patients diagnosed in 2014," "for four general sites (diagnosed in 70% of patients), Barbados (N=912)", size(small) margin(medium) color(white) fcolor(lavender) lcolor(black) box) name(figure8)
+restore
+
+count if sitear==19|sitear==14|(sitear>1 & sitear<8)|sitear==10 //637
+count if sitear!=. //912
+** N=912 so 4 general sites make up 70% of patients (637/912*100)
+
+gen newtime2=int(time/365.25) // 0 missing values generated
+tab newtime2 deceased ,m

@@ -3,7 +3,7 @@
  ******************************************************************************
  *
  *	GA-C D R C      A N A L Y S I S         C O D E
- *                                                              
+ *
  *  DO FILE: 		6_mort_da
  *					6th dofile:  Mortality Rates by (IARC) site
  *								  - identification of top sites
@@ -13,7 +13,7 @@
  *	 							  - ASR(ASMR): by site, by sex (world)
  *					The code herein is based on AMC Rose's 2008 analysis code
  *					but, instead of using AR's site classification, IARC's site
- *					classification created by J Campbell in 2014 cleaning 
+ *					classification created by J Campbell in 2014 cleaning
  *					dofile "5_merge_cancer_dc"
  *
  *	STATUS:			Completed
@@ -25,7 +25,7 @@
  *  ANALYSIS: 		Cancer 2014 dataset for annual report
  *
  * 	VERSION: 		version01 - 2014 ABSTRACTION PHASE
- *     
+ *
  *  SUPPORT: 		Natasha Sobers/Ian R Hambleton
  *
  ******************************************************************************
@@ -66,6 +66,12 @@ count // 651 cancer deaths in 2014
 tab age_10 sex ,m
 tab siteiarc ,m
 
+** proportions for Table 7 using AR's site groupings
+tab sitear sex ,m
+tab sitear , m
+tab sitear if sex==2 ,m // female
+tab sitear if sex==1 ,m // male
+
 ************************************************************
 * 4.3 MR age-standardised to WHO world popn - ALL sites
 ************************************************************
@@ -89,6 +95,10 @@ gen pfu=1 // for % year if not whole year collected; not done for cancer
 
 list deathid sex age_10 if age_10==1 // age range 0-14 for female & male: change case=0 for age_10=1
 
+tab pop age_10  if sex==1 //female
+tab pop age_10  if sex==2 //male
+
+
 preserve
 	* crude rate: point estimate
 	gen cancerpop = 1
@@ -97,12 +107,12 @@ preserve
 	collapse (sum) case (mean) pop_bb , by(pfu cancerpop age_10 sex)
 	replace case=0 if age_10==1 //2 changes
 	collapse (sum) case pop_bb , by(pfu cancerpop)
-	
+
 	** Weighting for incidence calculation IF period is NOT exactly one year
 	** (where it is 1 year, pfu=1)
 	rename pop_bb fpop_bb
 	gen pop_bb = fpop_bb * pfu
-	
+
 	gen mr = (case / pop_bb) * (10^5)
 	label var mr "Crude Mortality Rate"
 
@@ -135,20 +145,925 @@ preserve
 */
 restore
 
-** (2.2a) All sites (M&F) age-std Using WHO World Standard Population
+** For annual report - Section 4: Mortality - Table 7
+** Below top 10 code added by JC for 2014
+** All sites - using Angie's site groupings
 preserve
-	drop if age_10==. // 0 dropped
+bysort sitear: gen n=_N
+bysort n sitear: gen tag=(_n==1)
+replace tag = sum(tag)
+sum tag , meanonly
+gen top10 = (tag>=(`r(max)'-9))
+sum n if tag==(`r(max)'-9), meanonly
+replace top10 = 1 if n==`r(max)'
+tab sitear top10 if top10!=0
+contract sitear top10 if top10!=0, freq(count) percent(percentage)
+summ
+describe
+gsort -count
+drop top10
+/*
+sitear											count	percentage
+C61: prostate									150		27.08
+C50: breast										72		13.00
+C18: colon										71		12.82
+C42,C77: haem & lymph systems					58		10.47
+C80: unknown primary site						49		8.84
+C30-C39: respiratory and intrathoracic organs	43		7.76
+C15, C17, C22-C24, C26: other digestive organs	34		6.14
+C25: pancreas									29		5.23
+C64-C68: urinary tract							24		4.33
+C54,C55: uterus									24		4.33
+*/
+total count //554
+restore
+
+
+** Below top 5 code added by JC for 2014
+** MALE - using Angie's site groupings
+preserve
+drop if sex!=2 //265 obs deleted
+bysort sitear: gen n=_N
+bysort n sitear: gen tag5=(_n==1)
+replace tag5 = sum(tag5)
+sum tag5 , meanonly
+gen top5 = (tag5>=(`r(max)'-4))
+sum n if tag5==(`r(max)'-4), meanonly
+replace top5 = 1 if n==`r(max)'
+gsort -top5
+tab sitear top5 if top5!=0
+contract sitear top5 if top5!=0, freq(count) percent(percentage)
+gsort -count
+drop top5
+total count //273
+
+gen totpercent=(count/386)*100 //all cancers excl. female(265)
+gen alltotpercent=(count/651)*100 //all cancers
+/*
+sitear											count	percentage	totpercent	alltotpercent
+C61: prostate									150		54.95		38.8601		23.04148
+C18: colon										39		14.29		10.10363	5.990783
+C42,C77: haem & lymph systems					34		12.45		8.80829		5.222734
+C30-C39: respiratory and intrathoracic organs	26		9.52		6.735751	3.993856
+C80: unknown primary site						24		8.79		6.217617	3.686636
+*/
+restore
+
+
+** FEMALE - using Angie's site groupings
+preserve
+drop if sex!=1 //388 obs deleted
+bysort sitear: gen n=_N
+bysort n sitear: gen tag5=(_n==1)
+replace tag5 = sum(tag5)
+sum tag5 , meanonly
+gen top5 = (tag5>=(`r(max)'-4))
+sum n if tag5==(`r(max)'-4), meanonly
+replace top5 = 1 if n==`r(max)'
+gsort -top5
+tab sitear top5 if top5!=0
+contract sitear top5 if top5!=0, freq(count) percent(percentage)
+gsort -count
+drop top5
+total count //176
+
+gen totpercent=(count/265)*100 //all cancers excl. male(386) unk(2)
+gen alltotpercent=(count/651)*100 //all cancers
+/*
+sitear							count	percentage	totpercent	alltotpercent
+C50: breast						71		40.34		26.79245	10.9063
+C18: colon						32		18.18		12.07547	4.915514
+C80: unknown primary site		25		14.20		9.433962	3.840246
+C42,C77: haem & lymph systems	24		13.64		9.056603	3.686636
+C54,C55: uterus					24		13.64		9.056603	3.686636
+*/
+restore
+
+
+** Using WHO World Standard Population - using AR's site groupings
+** PROSTATE
+tab pop age_10 if sitear==19 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==19 //
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
-	collapse (sum) case pop_bb, by(pfu age_10)
-	replace case=0 if age_10==1 //1 change - hmm should be 2?
-	
+	sort age sex
+	** now we have to add in the cases and popns for the missings: M 0-14,15-24,25-34,35-44
+
+	expand 2 in 1
+	replace sex=2 in 6
+	replace age_10=1 in 6
+	replace case=0 in 6
+	replace pop_bb=(28005)  in 6
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 7
+	replace age_10=2 in 7
+	replace case=0 in 7
+	replace pop_bb=(18510)  in 7
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 8
+	replace age_10=3 in 8
+	replace case=0 in 8
+	replace pop_bb=(18465) in 8
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 9
+	replace age_10=4 in 9
+	replace case=0 in 9
+	replace pop_bb=(19550) in 9
+	sort age_10
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR PC - STD TO WHO WORLD POPN
+
+/*
+  +-------------------------------------------------------------+
+  | case        N    crude   rateadj   lb_gam   ub_gam   se_gam |
+  |-------------------------------------------------------------|
+  |  150   133011   112.77     74.01    62.45    87.28     6.19 |
+  +-------------------------------------------------------------+
+*/
+restore
+
+
+** BREAST
+tab pop age_10 if sitear==14 & sex==1 //female
+tab pop age_10 if sitear==14 & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==14 // breast only
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+
+	** now we have to add in the cases and popns for the missings:
+	** F 0-14,15-24
+	** M 0-14,15-24,25-34,35-44,45-54,55-64,65-74,85+
+	expand 2 in 1
+	replace sex=1 in 9
+	replace age_10=1 in 9
+	replace case=0 in 9
+	replace pop_bb=(26755) in 9
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 10
+	replace age_10=2 in 10
+	replace case=0 in 10
+	replace pop_bb=(18530) in 10
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 11
+	replace age_10=1 in 11
+	replace case=0 in 11
+	replace pop_bb=(28005) in 11
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 12
+	replace age_10=2 in 12
+	replace case=0 in 12
+	replace pop_bb=(18510) in 12
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 13
+	replace age_10=3 in 13
+	replace case=0 in 13
+	replace pop_bb=(18465) in 13
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 14
+	replace age_10=4 in 14
+	replace case=0 in 14
+	replace pop_bb=(19550) in 14
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 15
+	replace age_10=5 in 15
+	replace case=0 in 15
+	replace pop_bb=(19470) in 15
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 16
+	replace age_10=6 in 16
+	replace case=0 in 16
+	replace pop_bb=(14195) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 17
+	replace age_10=7 in 17
+	replace case=0 in 17
+	replace pop_bb=(8315) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 18
+	replace age_10=9 in 18
+	replace case=0 in 18
+	replace pop_bb=(1666) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR BC (M&F) - STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   72   277814   25.92     17.68    13.70    22.53     2.19 |
+  +------------------------------------------------------------+
+1 case was male but left total in Table 7 as both male and female
+*/
+restore
+
+
+
+** COLORECTAL
+tab pop age_10 if (sitear>2 & site<6) & sex==1 //female
+tab pop age_10 if (sitear>2 & site<6) & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if (sitear>2 & site<6)
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** M&F 0-14,15-24
+	** F   25-34
+
+	expand 2 in 1
+	replace sex=1 in 14
+	replace age_10=1 in 14
+	replace case=0 in 14
+	replace pop_bb=(26755) in 14
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 15
+	replace age_10=1 in 15
+	replace case=0 in 15
+	replace pop_bb=(28005) in 15
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 16
+	replace age_10=2 in 16
+	replace case=0 in 16
+	replace pop_bb=(18530) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 17
+	replace age_10=2 in 17
+	replace case=0 in 17
+	replace pop_bb=(18510) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 18
+	replace age_10=3 in 18
+	replace case=0 in 18
+	replace pop_bb=(19410) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR COLORECTAL (M&F)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   96   277814   34.56     22.23    17.85    27.44     2.38 |
+  +------------------------------------------------------------+
+*/
+restore
+
+
+** BLOOD & LYMPH
+tab pop age_10 if sitear==10 & sex==1 //female
+tab pop age_10 if sitear==10 & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==10
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** M&F 0-14
+	** F   15-24
+
+	expand 2 in 1
+	replace sex=1 in 16
+	replace age_10=1 in 16
+	replace case=0 in 16
+	replace pop_bb=(26755) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 17
+	replace age_10=1 in 17
+	replace case=0 in 17
+	replace pop_bb=(28005) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 18
+	replace age_10=2 in 18
+	replace case=0 in 18
+	replace pop_bb=(18530) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR BLOOD & LYMPH (M&F)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   58   277814   20.88     14.75    11.06    19.32     2.04 |
+  +------------------------------------------------------------+
+*/
+restore
+
+** STOMACH
+tab pop age_10 if (sitear==2|sitear==7) & sex==1 //female
+tab pop age_10 if (sitear==2|sitear==7) & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==2|sitear==7
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** M&F 0-14,25-34,35-44,45-54
+	** M   15-24
+
+	expand 2 in 1
+	replace sex=1 in 12
+	replace age_10=1 in 12
+	replace case=0 in 12
+	replace pop_bb=(26755) in 12
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 13
+	replace age_10=1 in 13
+	replace case=0 in 13
+	replace pop_bb=(28005) in 13
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 14
+	replace age_10=2 in 14
+	replace case=0 in 14
+	replace pop_bb=(18510) in 14
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 15
+	replace age_10=3 in 15
+	replace case=0 in 15
+	replace pop_bb=(19410) in 15
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 16
+	replace age_10=3 in 16
+	replace case=0 in 16
+	replace pop_bb=(18465) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 17
+	replace age_10=4 in 17
+	replace case=0 in 17
+	replace pop_bb=(21080) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 18
+	replace age_10=5 in 18
+	replace case=0 in 18
+	replace pop_bb=(21945) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR STOMACH CANCER (M&F)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   54   277814   19.44     11.81     8.74    15.71     1.72 |
+  +------------------------------------------------------------+
+*/
+restore
+
+** PSU (primary site unknown)
+tab pop age_10 if sitear==25 & sex==1 //female
+tab pop age_10 if sitear==25 & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==25
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** M&F 0-14
+	** F 15-24,25-34,35-44
+
+	expand 2 in 1
+	replace sex=1 in 14
+	replace age_10=1 in 14
+	replace case=0 in 14
+	replace pop_bb=(26755) in 14
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 15
+	replace age_10=1 in 15
+	replace case=0 in 15
+	replace pop_bb=(28005) in 15
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 16
+	replace age_10=2 in 16
+	replace case=0 in 16
+	replace pop_bb=(18530) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 17
+	replace age_10=3 in 17
+	replace case=0 in 17
+	replace pop_bb=(19410) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 18
+	replace age_10=4 in 18
+	replace case=0 in 18
+	replace pop_bb=(21080) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR PSU (M&F)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   49   277814   17.64     11.47     8.36    15.44     1.74 |
+  +------------------------------------------------------------+
+*/
+restore
+
+
+** RESPIRATORY
+tab pop age_10 if sitear==8 & sex==1 //female
+tab pop age_10 if sitear==8 & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==8
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** M&F 0-14,15-24
+	** M 25-34,35-44
+
+	expand 2 in 1
+	replace sex=1 in 13
+	replace age_10=1 in 13
+	replace case=0 in 13
+	replace pop_bb=(26755) in 13
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 14
+	replace age_10=1 in 14
+	replace case=0 in 14
+	replace pop_bb=(28005) in 14
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 15
+	replace age_10=2 in 15
+	replace case=0 in 15
+	replace pop_bb=(18530) in 15
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 16
+	replace age_10=2 in 16
+	replace case=0 in 16
+	replace pop_bb=(18510) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 17
+	replace age_10=3 in 17
+	replace case=0 in 17
+	replace pop_bb=(18465) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 18
+	replace age_10=4 in 18
+	replace case=0 in 18
+	replace pop_bb=(19550) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR RESPIRATORY (M&F)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   43   277814   15.48     10.59     7.58    14.48     1.70 |
+  +------------------------------------------------------------+
+*/
+restore
+
+
+** PANCREAS
+tab pop age_10 if sitear==6 & sex==1 //female
+tab pop age_10 if sitear==6 & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==6
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** M&F 0-14,25-34,45-54
+	** M   15-24
+
+	expand 2 in 1
+	replace sex=1 in 12
+	replace age_10=1 in 12
+	replace case=0 in 12
+	replace pop_bb=(26755) in 12
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 13
+	replace age_10=1 in 13
+	replace case=0 in 13
+	replace pop_bb=(28005) in 13
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 14
+	replace age_10=2 in 14
+	replace case=0 in 14
+	replace pop_bb=(18510) in 14
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 15
+	replace age_10=3 in 15
+	replace case=0 in 15
+	replace pop_bb=(19410) in 15
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 16
+	replace age_10=3 in 16
+	replace case=0 in 16
+	replace pop_bb=(18465) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 17
+	replace age_10=5 in 17
+	replace case=0 in 17
+	replace pop_bb=(21945) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 18
+	replace age_10=5 in 18
+	replace case=0 in 18
+	replace pop_bb=(19470) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR PANCREATIC CANCER (M&F)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   29   277814   10.44      6.86     4.50    10.11     1.37 |
+  +------------------------------------------------------------+
+*/
+restore
+
+
+** URINARY TRACT
+tab pop age_10 if sitear==20 & sex==1 //female
+tab pop age_10 if sitear==20 & sex==2 //male
+
+preserve
+	drop if age_10==.
+	keep if sitear==20
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** M&F 0-14,15-24,25-34
+	** F   45-54,55-64
+	** M   35-44
+
+	expand 2 in 1
+	replace sex=1 in 10
+	replace age_10=1 in 10
+	replace case=0 in 10
+	replace pop_bb=(26755) in 10
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 11
+	replace age_10=1 in 11
+	replace case=0 in 11
+	replace pop_bb=(28005) in 11
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 12
+	replace age_10=2 in 12
+	replace case=0 in 12
+	replace pop_bb=(18530) in 12
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 13
+	replace age_10=2 in 13
+	replace case=0 in 13
+	replace pop_bb=(18510) in 13
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 14
+	replace age_10=3 in 14
+	replace case=0 in 14
+	replace pop_bb=(19410) in 14
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 15
+	replace age_10=3 in 15
+	replace case=0 in 15
+	replace pop_bb=(18465) in 15
+	sort age_10
+
+	expand 2 in 1
+	replace sex=2 in 16
+	replace age_10=4 in 16
+	replace case=0 in 16
+	replace pop_bb=(19550) in 16
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 17
+	replace age_10=5 in 17
+	replace case=0 in 17
+	replace pop_bb=(21945) in 17
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 18
+	replace age_10=6 in 18
+	replace case=0 in 18
+	replace pop_bb=(15940) in 18
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR URINARY TRACT (M&F)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   24   277814    8.64      5.24     3.28     8.07     1.17 |
+  +------------------------------------------------------------+
+*/
+restore
+
+
+** CORPUS UTERI
+tab pop age_10 if sitear==16 //female
+
+preserve
+	drop if age_10==.
+	keep if sitear==16 //corpus uteri, uterus NOS
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings:
+	** F 0-14,15-24,25-34,45-54
+
+	expand 2 in 1
+	replace sex=1 in 6
+	replace age_10=1 in 6
+	replace case=0 in 6
+	replace pop_bb=(26755) in 6
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 7
+	replace age_10=2 in 7
+	replace case=0 in 7
+	replace pop_bb=(18530) in 7
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 8
+	replace age_10=3 in 8
+	replace case=0 in 8
+	replace pop_bb=(19410) in 8
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 9
+	replace age_10=5 in 9
+	replace case=0 in 9
+	replace pop_bb=(21945) in 9
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR CORPUS UTERI (WOMEN)- STD TO WHO WORLD POPN
+
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   24   144803   16.57     10.61     6.67    16.23     2.34 |
+  +------------------------------------------------------------+
+*/
+restore
+
+
+
+/* not needed for Table 7 as not in top 10
+** CERVIX UTERI - female only
+tab pop_bb age_10 if sitear==15 //female
+
+preserve
+	drop if age_10==.
+	keep if sitear==15 // cervix uteri
+
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	sort age sex
+	** now we have to add in the cases and popns for the missings: F 0-14,15-24,25-34
+	expand 2 in 1
+	replace sex=1 in 7
+	replace age_10=1 in 7
+	replace case=0 in 7
+	replace pop_bb=(26755) in 7
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 8
+	replace age_10=2 in 8
+	replace case=0 in 8
+	replace pop_bb=(18530) in 8
+	sort age_10
+
+	expand 2 in 1
+	replace sex=1 in 9
+	replace age_10=3 in 9
+	replace case=0 in 9
+	replace pop_bb=(19410) in 9
+	sort age_10
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
+		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
+** THIS IS FOR CERVIX - STD TO WHO WORLD POPN
+/*
+  +------------------------------------------------------------+
+  | case        N   crude   rateadj   lb_gam   ub_gam   se_gam |
+  |------------------------------------------------------------|
+  |   12   144803    8.29      5.06     2.51     9.37     1.67 |
+  +------------------------------------------------------------+
+*/
+restore
+*/
+
+/*
+** (2.2a) All sites (M&F) age-std Using WHO World Standard Population
+preserve
+	drop if age_10==. // 0 dropped
+	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
+	collapse (sum) case pop_bb, by(pfu age_10)
+	replace case=0 if age_10==1 //1 change - hmm should be 2?
+
+	** -distrate is a user written command.
+	** type -search distrate,net- at the Stata prompt to find and install this command
+
+sort age_10
+total pop_bb
+
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
 ** THIS IS FOR ALL sites - STD TO WHO WORLD POPN
 /*
@@ -160,7 +1075,7 @@ distrate case pop_bb using "data\population\who2000_10-2", 	///
 */
 restore
 
-** Now let's estimate MR by top sites 
+** Now let's estimate MR by top sites
 tab siteiarc ,m
 ** Check for top 10 deaths by IARC site
 ** include O&U; exclude in-situ
@@ -231,49 +1146,49 @@ tab pop age_10 if siteiarc==39 //male
 
 preserve
 	drop if age_10==.
-	keep if siteiarc==39 // 
-	
+	keep if siteiarc==39 //
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
 	** now we have to add in the cases and popns for the missings: M 0-14,15-24,25-34,35-44
-		
+
 	expand 2 in 1
 	replace sex=2 in 6
 	replace age_10=1 in 6
 	replace case=0 in 6
 	replace pop_bb=(28005)  in 6
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 7
 	replace age_10=2 in 7
 	replace case=0 in 7
 	replace pop_bb=(18510)  in 7
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 8
 	replace age_10=3 in 8
 	replace case=0 in 8
 	replace pop_bb=(18465) in 8
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 9
 	replace age_10=4 in 9
 	replace case=0 in 9
 	replace pop_bb=(19550) in 9
 	sort age_10
-			
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR PC - STD TO WHO WORLD POPN 
+** THIS IS FOR PC - STD TO WHO WORLD POPN
 
 /*
   +-------------------------------------------------------------+
@@ -292,11 +1207,11 @@ tab pop age_10 if siteiarc==29 & sex==2 //male
 preserve
 	drop if age_10==.
 	keep if siteiarc==29 // breast only
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
 
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** F 0-14,15-24
 	** M 0-14,15-24,25-34,35-44,45-54,55-64,65-74,85+
 	expand 2 in 1
@@ -305,79 +1220,79 @@ preserve
 	replace case=0 in 9
 	replace pop_bb=(26755) in 9
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 10
 	replace age_10=2 in 10
 	replace case=0 in 10
 	replace pop_bb=(18530) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(28005) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18510) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(18465) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(19550) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=5 in 15
 	replace case=0 in 15
 	replace pop_bb=(19470) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=6 in 16
 	replace case=0 in 16
 	replace pop_bb=(14195) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=7 in 17
 	replace case=0 in 17
 	replace pop_bb=(8315) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=9 in 18
 	replace case=0 in 18
 	replace pop_bb=(1666) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR BC (M&F) - STD TO WHO WORLD POPN 
+** THIS IS FOR BC (M&F) - STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -394,11 +1309,11 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==29 // breast only
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
 
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** F 0-14,15-24
 	** M 0-14,15-24,25-34,35-44,45-54,55-64,65-74,85+
 	expand 2 in 1
@@ -407,70 +1322,70 @@ preserve
 	replace case=0 in 9
 	replace pop_bb=(26755) in 9
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 10
 	replace age_10=2 in 10
 	replace case=0 in 10
 	replace pop_bb=(18530) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(28005) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18510) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(18465) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(19550) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=5 in 15
 	replace case=0 in 15
 	replace pop_bb=(19470) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=6 in 16
 	replace case=0 in 16
 	replace pop_bb=(14195) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=7 in 17
 	replace case=0 in 17
 	replace pop_bb=(8315) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=9 in 18
 	replace case=0 in 18
 	replace pop_bb=(1666) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -478,9 +1393,9 @@ sort age_10
 total pop_bb
 
 drop if sex==2 // for breast cancer - female
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR BC (WOMEN) - STD TO WHO WORLD POPN 
+** THIS IS FOR BC (WOMEN) - STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -495,11 +1410,11 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==29 // breast only
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
 
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** F 0-14,15-24
 	** M 0-14,15-24,25-34,35-44,45-54,55-64,65-74,85+
 	expand 2 in 1
@@ -508,70 +1423,70 @@ preserve
 	replace case=0 in 9
 	replace pop_bb=(26755) in 9
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 10
 	replace age_10=2 in 10
 	replace case=0 in 10
 	replace pop_bb=(18530) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(28005) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18510) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(18465) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(19550) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=5 in 15
 	replace case=0 in 15
 	replace pop_bb=(19470) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=6 in 16
 	replace case=0 in 16
 	replace pop_bb=(14195) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=7 in 17
 	replace case=0 in 17
 	replace pop_bb=(8315) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=9 in 18
 	replace case=0 in 18
 	replace pop_bb=(1666) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -579,9 +1494,9 @@ sort age_10
 total pop_bb
 
 drop if sex==1 // for breast cancer - male
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR BC (MEN) - STD TO WHO WORLD POPN 
+** THIS IS FOR BC (MEN) - STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -601,12 +1516,12 @@ preserve
 	keep if siteiarc==29 & sex==1
 	collapse (sum) case (mean) pop_bb , by(pfu cancerpop age_10 sex)
 	collapse (sum) case pop_bb , by(pfu cancerpop)
-	
+
 	** Weighting for incidence calculation IF period is NOT exactly one year
 	** (where it is 1 year, pfu=1)
-	drop pop_bb 
+	drop pop_bb
 	gen pop_bb = 144803
-	
+
 	gen mr = (case / pop_bb) * (10^5)
 	label var mr "Crude Mortality Rate"
 
@@ -642,34 +1557,34 @@ restore
 
 
 
-** COLON 
+** COLON
 tab pop age_10 if siteiarc==13 & sex==1 //female
 tab pop age_10 if siteiarc==13 & sex==2 //male
 
 preserve
 	drop if age_10==.
 	keep if siteiarc==13
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34
 	** F 35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(26755) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(28005) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=2 in 14
@@ -683,37 +1598,37 @@ preserve
 	replace case=0 in 15
 	replace pop_bb=(18510) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(19410) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(18465) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(21080) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR COLON CANCER (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR COLON CANCER (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -728,27 +1643,27 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==13
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34
 	** F 35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(26755) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(28005) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=2 in 14
@@ -762,28 +1677,28 @@ preserve
 	replace case=0 in 15
 	replace pop_bb=(18510) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(19410) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(18465) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(21080) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -792,9 +1707,9 @@ total pop_bb
 
 drop if sex==2 // for female
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR COLON CANCER (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR COLON CANCER (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -809,27 +1724,27 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==13
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34
 	** F 35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(26755) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(28005) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=2 in 14
@@ -843,28 +1758,28 @@ preserve
 	replace case=0 in 15
 	replace pop_bb=(18510) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(19410) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(18465) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(21080) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -873,9 +1788,9 @@ total pop_bb
 
 drop if sex==1 // for male
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR COLON CANCER (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR COLON CANCER (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -887,64 +1802,64 @@ distrate case pop_bb using "data\population\who2000_10-2", 	///
 restore
 
 
-** O&U 
+** O&U
 tab pop age_10 if siteiarc==61 & sex==1 //female
 tab pop age_10 if siteiarc==61 & sex==2 //male
 
 preserve
 	drop if age_10==.
 	keep if siteiarc==61
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14
 	** F 15-24,25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=1 in 14
 	replace case=0 in 14
 	replace pop_bb=(26755) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=1 in 15
 	replace case=0 in 15
 	replace pop_bb=(28005) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=2 in 16
 	replace case=0 in 16
 	replace pop_bb=(18530) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(19410) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(21080) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR O&U CANCER (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR O&U CANCER (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -959,48 +1874,48 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==61
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14
 	** F 15-24,25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=1 in 14
 	replace case=0 in 14
 	replace pop_bb=(26755) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=1 in 15
 	replace case=0 in 15
 	replace pop_bb=(28005) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=2 in 16
 	replace case=0 in 16
 	replace pop_bb=(18530) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(19410) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(21080) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1009,9 +1924,9 @@ total pop_bb
 
 drop if sex==2 // for female
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR O&U CANCER (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR O&U CANCER (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1026,48 +1941,48 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==61
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14
 	** F 15-24,25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=1 in 14
 	replace case=0 in 14
 	replace pop_bb=(26755) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=1 in 15
 	replace case=0 in 15
 	replace pop_bb=(28005) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=2 in 16
 	replace case=0 in 16
 	replace pop_bb=(18530) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(19410) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(21080) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1076,9 +1991,9 @@ total pop_bb
 
 drop if sex==1 // for male
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR O&U CANCER (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR O&U CANCER (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1097,64 +2012,64 @@ tab pop age_10 if siteiarc==21 & sex==2 //male
 preserve
 	drop if age_10==.
 	keep if siteiarc==21
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24
 	** M 25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(26755) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=1 in 14
 	replace case=0 in 14
 	replace pop_bb=(28005) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=2 in 15
 	replace case=0 in 15
 	replace pop_bb=(18530) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=2 in 16
 	replace case=0 in 16
 	replace pop_bb=(18510) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(18465) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(19550) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR LUNG CANCER (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR LUNG CANCER (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1169,55 +2084,55 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==21
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24
 	** M 25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(26755) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=1 in 14
 	replace case=0 in 14
 	replace pop_bb=(28005) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=2 in 15
 	replace case=0 in 15
 	replace pop_bb=(18530) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=2 in 16
 	replace case=0 in 16
 	replace pop_bb=(18510) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(18465) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(19550) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1226,9 +2141,9 @@ total pop_bb
 
 drop if sex==2 //for female
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR LUNG CANCER (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR LUNG CANCER (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1243,55 +2158,55 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==21
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24
 	** M 25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(26755) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=1 in 14
 	replace case=0 in 14
 	replace pop_bb=(28005) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=2 in 15
 	replace case=0 in 15
 	replace pop_bb=(18530) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=2 in 16
 	replace case=0 in 16
 	replace pop_bb=(18510) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=3 in 17
 	replace case=0 in 17
 	replace pop_bb=(18465) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(19550) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1300,9 +2215,9 @@ total pop_bb
 
 drop if sex==1 //for male
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR LUNG CANCER (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR LUNG CANCER (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1322,72 +2237,72 @@ tab pop age_10 if siteiarc==18 & sex==2 //male
 preserve
 	drop if age_10==.
 	keep if siteiarc==18
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,25-34,45-54
 	** M 15-24
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(26755) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(28005) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=2 in 14
 	replace case=0 in 14
 	replace pop_bb=(18510) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=3 in 15
 	replace case=0 in 15
 	replace pop_bb=(19410) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(18465) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=5 in 17
 	replace case=0 in 17
 	replace pop_bb=(21945) in 17
 	sort age_10
-	
-	
+
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=5 in 18
 	replace case=0 in 18
 	replace pop_bb=(19470) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR PANCREATIC CANCER (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR PANCREATIC CANCER (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1403,63 +2318,63 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==18
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,25-34,45-54
 	** M 15-24
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(26755) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(28005) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=2 in 14
 	replace case=0 in 14
 	replace pop_bb=(18510) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=3 in 15
 	replace case=0 in 15
 	replace pop_bb=(19410) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(18465) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=5 in 17
 	replace case=0 in 17
 	replace pop_bb=(21945) in 17
 	sort age_10
-	
-	
+
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=5 in 18
 	replace case=0 in 18
 	replace pop_bb=(19470) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1468,9 +2383,9 @@ total pop_bb
 
 drop if sex==2 //for female
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR PANCREATIC CANCER (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR PANCREATIC CANCER (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1485,63 +2400,63 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==18
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,25-34,45-54
 	** M 15-24
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(26755) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 13
 	replace age_10=1 in 13
 	replace case=0 in 13
 	replace pop_bb=(28005) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=2 in 14
 	replace case=0 in 14
 	replace pop_bb=(18510) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=3 in 15
 	replace case=0 in 15
 	replace pop_bb=(19410) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(18465) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=5 in 17
 	replace case=0 in 17
 	replace pop_bb=(21945) in 17
 	sort age_10
-	
-	
+
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=5 in 18
 	replace case=0 in 18
 	replace pop_bb=(19470) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1550,9 +2465,9 @@ total pop_bb
 
 drop if sex==1 //for male
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR PANCREATIC CANCER (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR PANCREATIC CANCER (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1571,77 +2486,77 @@ tab pop age_10 if siteiarc==55 & sex==2 //male
 preserve
 	drop if age_10==.
 	keep if siteiarc==55
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(26755) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(28005) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=2 in 13
 	replace case=0 in 13
 	replace pop_bb=(18530) in 13
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=2 in 14
 	replace case=0 in 14
 	replace pop_bb=(18510) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=3 in 15
 	replace case=0 in 15
 	replace pop_bb=(19410) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(18465) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=4 in 17
 	replace case=0 in 17
 	replace pop_bb=(21080) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(19550) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR MULTIPLE MYELOMA (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR MULTIPLE MYELOMA (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1656,68 +2571,68 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==55
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(26755) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(28005) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=2 in 13
 	replace case=0 in 13
 	replace pop_bb=(18530) in 13
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=2 in 14
 	replace case=0 in 14
 	replace pop_bb=(18510) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=3 in 15
 	replace case=0 in 15
 	replace pop_bb=(19410) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(18465) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=4 in 17
 	replace case=0 in 17
 	replace pop_bb=(21080) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(19550) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1726,9 +2641,9 @@ total pop_bb
 
 drop if sex==2 //for female
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR MULTIPLE MYELOMA (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR MULTIPLE MYELOMA (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1743,68 +2658,68 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==55
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34,35-44
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(26755) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=1 in 12
 	replace case=0 in 12
 	replace pop_bb=(28005) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=2 in 13
 	replace case=0 in 13
 	replace pop_bb=(18530) in 13
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=2 in 14
 	replace case=0 in 14
 	replace pop_bb=(18510) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=3 in 15
 	replace case=0 in 15
 	replace pop_bb=(19410) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=3 in 16
 	replace case=0 in 16
 	replace pop_bb=(18465) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=4 in 17
 	replace case=0 in 17
 	replace pop_bb=(21080) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=4 in 18
 	replace case=0 in 18
 	replace pop_bb=(19550) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -1813,9 +2728,9 @@ total pop_bb
 
 drop if sex==1 //for male
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR MULTIPLE MYELOMA (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR MULTIPLE MYELOMA (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1834,49 +2749,49 @@ tab pop age_10 if siteiarc==33 //female
 preserve
 	drop if age_10==.
 	keep if siteiarc==33
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** F 0-14,15-24,25-34,45-54
-	
+
 	expand 2 in 1
 	replace sex=1 in 6
 	replace age_10=1 in 6
 	replace case=0 in 6
 	replace pop_bb=(26755) in 6
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 7
 	replace age_10=2 in 7
 	replace case=0 in 7
 	replace pop_bb=(18530) in 7
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 8
 	replace age_10=3 in 8
 	replace case=0 in 8
 	replace pop_bb=(19410) in 8
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 9
 	replace age_10=5 in 9
 	replace case=0 in 9
 	replace pop_bb=(21945) in 9
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR CORPUS UTERI (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR CORPUS UTERI (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -1895,107 +2810,107 @@ tab pop age_10 if siteiarc==11 & sex==2 //male
 preserve
 	drop if age_10==.
 	keep if siteiarc==11
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34,35-44,45-54
 	** F 65-74
 	** M 55-64
-	
+
 	expand 2 in 1
 	replace sex=1 in 7
 	replace age_10=1 in 7
 	replace case=0 in 7
 	replace pop_bb=(26755) in 7
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 8
 	replace age_10=1 in 8
 	replace case=0 in 8
 	replace pop_bb=(28005) in 8
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 9
 	replace age_10=2 in 9
 	replace case=0 in 9
 	replace pop_bb=(18530) in 9
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 10
 	replace age_10=2 in 10
 	replace case=0 in 10
 	replace pop_bb=(18510) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=3 in 11
 	replace case=0 in 11
 	replace pop_bb=(19410) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=3 in 12
 	replace case=0 in 12
 	replace pop_bb=(18465) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=4 in 13
 	replace case=0 in 13
 	replace pop_bb=(21080) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(19550) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=5 in 15
 	replace case=0 in 15
 	replace pop_bb=(21945) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(19470) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=6 in 17
 	replace case=0 in 17
 	replace pop_bb=(14195) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=7 in 18
 	replace case=0 in 18
 	replace pop_bb=(10515) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR STOMACH CANCER (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR STOMACH CANCER (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2010,98 +2925,98 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==11
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34,35-44,45-54
 	** F 65-74
 	** M 55-64
-	
+
 	expand 2 in 1
 	replace sex=1 in 7
 	replace age_10=1 in 7
 	replace case=0 in 7
 	replace pop_bb=(26755) in 7
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 8
 	replace age_10=1 in 8
 	replace case=0 in 8
 	replace pop_bb=(28005) in 8
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 9
 	replace age_10=2 in 9
 	replace case=0 in 9
 	replace pop_bb=(18530) in 9
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 10
 	replace age_10=2 in 10
 	replace case=0 in 10
 	replace pop_bb=(18510) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=3 in 11
 	replace case=0 in 11
 	replace pop_bb=(19410) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=3 in 12
 	replace case=0 in 12
 	replace pop_bb=(18465) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=4 in 13
 	replace case=0 in 13
 	replace pop_bb=(21080) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(19550) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=5 in 15
 	replace case=0 in 15
 	replace pop_bb=(21945) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(19470) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=6 in 17
 	replace case=0 in 17
 	replace pop_bb=(14195) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=7 in 18
 	replace case=0 in 18
 	replace pop_bb=(10515) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -2110,9 +3025,9 @@ total pop_bb
 
 drop if sex==2 //female only
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR STOMACH CANCER (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR STOMACH CANCER (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2127,98 +3042,98 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==11
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,25-34,35-44,45-54
 	** F 65-74
 	** M 55-64
-	
+
 	expand 2 in 1
 	replace sex=1 in 7
 	replace age_10=1 in 7
 	replace case=0 in 7
 	replace pop_bb=(26755) in 7
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 8
 	replace age_10=1 in 8
 	replace case=0 in 8
 	replace pop_bb=(28005) in 8
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 9
 	replace age_10=2 in 9
 	replace case=0 in 9
 	replace pop_bb=(18530) in 9
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 10
 	replace age_10=2 in 10
 	replace case=0 in 10
 	replace pop_bb=(18510) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=3 in 11
 	replace case=0 in 11
 	replace pop_bb=(19410) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=3 in 12
 	replace case=0 in 12
 	replace pop_bb=(18465) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=4 in 13
 	replace case=0 in 13
 	replace pop_bb=(21080) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(19550) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=5 in 15
 	replace case=0 in 15
 	replace pop_bb=(21945) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(19470) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 17
 	replace age_10=6 in 17
 	replace case=0 in 17
 	replace pop_bb=(14195) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=7 in 18
 	replace case=0 in 18
 	replace pop_bb=(10515) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -2227,9 +3142,9 @@ total pop_bb
 
 drop if sex==1 //male only
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR STOMACH CANCER (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR STOMACH CANCER (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2248,93 +3163,93 @@ tab pop age_10 if siteiarc==14 & sex==2 //male
 preserve
 	drop if age_10==.
 	keep if siteiarc==14
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,35-44
 	** F 25-34,65-74
 	** M 45-54,85+
-	
+
 	expand 2 in 1
 	replace sex=1 in 9
 	replace age_10=1 in 9
 	replace case=0 in 9
 	replace pop_bb=(26755) in 9
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 10
 	replace age_10=1 in 10
 	replace case=0 in 10
 	replace pop_bb=(28005) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=2 in 11
 	replace case=0 in 11
 	replace pop_bb=(18530) in 11
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18510) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(19410) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(21080) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=4 in 15
 	replace case=0 in 15
 	replace pop_bb=(19550) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(19470) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=7 in 17
 	replace case=0 in 17
 	replace pop_bb=(10515) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=9 in 18
 	replace case=0 in 18
 	replace pop_bb=(1666) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR RECTAL CANCER (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR RECTAL CANCER (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2349,84 +3264,84 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==14
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,35-44
 	** F 25-34,65-74
 	** M 45-54,85+
-	
+
 	expand 2 in 1
 	replace sex=1 in 9
 	replace age_10=1 in 9
 	replace case=0 in 9
 	replace pop_bb=(26755) in 9
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 10
 	replace age_10=1 in 10
 	replace case=0 in 10
 	replace pop_bb=(28005) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=2 in 11
 	replace case=0 in 11
 	replace pop_bb=(18530) in 11
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18510) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(19410) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(21080) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=4 in 15
 	replace case=0 in 15
 	replace pop_bb=(19550) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(19470) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=7 in 17
 	replace case=0 in 17
 	replace pop_bb=(10515) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=9 in 18
 	replace case=0 in 18
 	replace pop_bb=(1666) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -2435,9 +3350,9 @@ total pop_bb
 
 drop if sex==2 //female only
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR RECTAL CANCER (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR RECTAL CANCER (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2452,84 +3367,84 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==14
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,15-24,35-44
 	** F 25-34,65-74
 	** M 45-54,85+
-	
+
 	expand 2 in 1
 	replace sex=1 in 9
 	replace age_10=1 in 9
 	replace case=0 in 9
 	replace pop_bb=(26755) in 9
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 10
 	replace age_10=1 in 10
 	replace case=0 in 10
 	replace pop_bb=(28005) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 11
 	replace age_10=2 in 11
 	replace case=0 in 11
 	replace pop_bb=(18530) in 11
 	sort age_10
-		
+
 	expand 2 in 1
 	replace sex=2 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18510) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(19410) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 14
 	replace age_10=4 in 14
 	replace case=0 in 14
 	replace pop_bb=(21080) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 15
 	replace age_10=4 in 15
 	replace case=0 in 15
 	replace pop_bb=(19550) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(19470) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=7 in 17
 	replace case=0 in 17
 	replace pop_bb=(10515) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 18
 	replace age_10=9 in 18
 	replace case=0 in 18
 	replace pop_bb=(1666) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -2538,9 +3453,9 @@ total pop_bb
 
 drop if sex==1 //male only
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR RECTAL CANCER (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR RECTAL CANCER (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2559,85 +3474,85 @@ tab pop age_10 if siteiarc==53 & sex==2 //male
 preserve
 	drop if age_10==.
 	keep if siteiarc==53
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,25-34
 	** F 15-24,35-44,45-54,55-64,65-74
-	
+
 	expand 2 in 1
 	replace sex=1 in 10
 	replace age_10=1 in 10
 	replace case=0 in 10
 	replace pop_bb=(26755) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(28005) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18530) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(19410) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=3 in 14
 	replace case=0 in 14
 	replace pop_bb=(18465) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=4 in 15
 	replace case=0 in 15
 	replace pop_bb=(21080) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(21945) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=6 in 17
 	replace case=0 in 17
 	replace pop_bb=(15940) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=7 in 18
 	replace case=0 in 18
 	replace pop_bb=(10515) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR NHL (M&F)- STD TO WHO WORLD POPN 
+** THIS IS FOR NHL (M&F)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2652,76 +3567,76 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==53
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,25-34
 	** F 15-24,35-44,45-54,55-64,65-74
-	
+
 	expand 2 in 1
 	replace sex=1 in 10
 	replace age_10=1 in 10
 	replace case=0 in 10
 	replace pop_bb=(26755) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(28005) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18530) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(19410) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=3 in 14
 	replace case=0 in 14
 	replace pop_bb=(18465) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=4 in 15
 	replace case=0 in 15
 	replace pop_bb=(21080) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(21945) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=6 in 17
 	replace case=0 in 17
 	replace pop_bb=(15940) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=7 in 18
 	replace case=0 in 18
 	replace pop_bb=(10515) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -2730,9 +3645,9 @@ total pop_bb
 
 drop if sex==2 //female only
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR NHL (WOMEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR NHL (WOMEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2747,76 +3662,76 @@ restore
 preserve
 	drop if age_10==.
 	keep if siteiarc==53
-	
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
-	** now we have to add in the cases and popns for the missings: 
+	** now we have to add in the cases and popns for the missings:
 	** M&F 0-14,25-34
 	** F 15-24,35-44,45-54,55-64,65-74
-	
+
 	expand 2 in 1
 	replace sex=1 in 10
 	replace age_10=1 in 10
 	replace case=0 in 10
 	replace pop_bb=(26755) in 10
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 11
 	replace age_10=1 in 11
 	replace case=0 in 11
 	replace pop_bb=(28005) in 11
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 12
 	replace age_10=2 in 12
 	replace case=0 in 12
 	replace pop_bb=(18530) in 12
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 13
 	replace age_10=3 in 13
 	replace case=0 in 13
 	replace pop_bb=(19410) in 13
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 14
 	replace age_10=3 in 14
 	replace case=0 in 14
 	replace pop_bb=(18465) in 14
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 15
 	replace age_10=4 in 15
 	replace case=0 in 15
 	replace pop_bb=(21080) in 15
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 16
 	replace age_10=5 in 16
 	replace case=0 in 16
 	replace pop_bb=(21945) in 16
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 17
 	replace age_10=6 in 17
 	replace case=0 in 17
 	replace pop_bb=(15940) in 17
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=1 in 18
 	replace age_10=7 in 18
 	replace case=0 in 18
 	replace pop_bb=(10515) in 18
 	sort age_10
-	
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
@@ -2825,9 +3740,9 @@ total pop_bb
 
 drop if sex==1 //male only
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR NHL (MEN)- STD TO WHO WORLD POPN 
+** THIS IS FOR NHL (MEN)- STD TO WHO WORLD POPN
 
 /*
   +------------------------------------------------------------+
@@ -2848,7 +3763,7 @@ restore
 * 4.3 MR age-standardised to WHO world popn - ALL sites
 ************************************************************
 
-** Now let's estimate MR by top sites 
+** Now let's estimate MR by top sites
 tab sitecr5db ,m //2 missing are 0-14 pop records
 
 ** Check for top 10 deaths by CR5db site
@@ -2920,49 +3835,49 @@ tab pop age_10 if sitecr5db==14 //male
 
 preserve
 	drop if age_10==.
-	keep if sitecr5db==14 // 
-	
+	keep if sitecr5db==14 //
+
 	collapse (sum) case (mean) pop_bb, by(pfu age_10 sex)
 	sort age sex
 	** now we have to add in the cases and popns for the missings: M 0-14,15-24,25-34,35-44
-		
+
 	expand 2 in 1
 	replace sex=2 in 6
 	replace age_10=1 in 6
 	replace case=0 in 6
 	replace pop_bb=(28005)  in 6
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 7
 	replace age_10=2 in 7
 	replace case=0 in 7
 	replace pop_bb=(18510)  in 7
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 8
 	replace age_10=3 in 8
 	replace case=0 in 8
 	replace pop_bb=(18465) in 8
 	sort age_10
-	
+
 	expand 2 in 1
 	replace sex=2 in 9
 	replace age_10=4 in 9
 	replace case=0 in 9
 	replace pop_bb=(19550) in 9
 	sort age_10
-			
+
 	** -distrate is a user written command.
 	** type -search distrate,net- at the Stata prompt to find and install this command
 
 sort age_10
 total pop_bb
 
-distrate case pop_bb using "data\population\who2000_10-2", 	///	
+distrate case pop_bb using "data\population\who2000_10-2", 	///
 		         stand(age_10) popstand(pop) mult(100000) format(%8.2f)
-** THIS IS FOR PC - STD TO WHO WORLD POPN 
+** THIS IS FOR PC - STD TO WHO WORLD POPN
 
 /*
   +-------------------------------------------------------------+

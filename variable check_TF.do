@@ -5,7 +5,8 @@
     //  analysts:				       	Jacqueline CAMPBELL, Stephanie WHITEMAN
     //  date first created      26-FEB-2019
     // 	date last modified	    26-FEB-2019
-    //  algorithm task			    Checking variable completeness on 2018 EI7 dataset
+    //  algorithm task			    Checking variable completeness
+    //                          for tracking form of 2018 EI7 dataset
 
     ** General algorithm set-up
     version 15
@@ -34,8 +35,12 @@
 *  (4) PQI (performance & quality indicators) variables
 **************************************************************************
 
-** Load 2018 EI7 raw data
+** Load 2018 EI7 raw data (Tracking)
 import excel using "`datapath'\version03\1-input\20190226rawdataTF2018.xlsx" , firstrow case(lower) clear
+
+describe //102 variables; 672 observations as of 26feb2019
+
+** Note: tid 1 contains dummy data
 
 ** Rename all EI7 admin variables to end in EI
 rename necessary* =EI

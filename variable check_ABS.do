@@ -269,5 +269,5 @@ rename win* =PQI
 rename *da =HR
 
 ** Save dataset to be used in variable completeness quality check
-save "`datapath'\version03\3-output\variable check prep_ABS.dta", replace
+save "`datapath'\version03\2-working\variable check prep_ABS.dta", replace
 label data "2018 Epi Info 7 Check for Completeness - Asbracting Form"

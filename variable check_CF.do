@@ -105,5 +105,5 @@ rename cftype =PQI
 rename cfda =HR
 
 ** Save dataset to be used in variable completeness quality check
-save "`datapath'\version03\3-output\variable check prep_CF.dta", replace
+save "`datapath'\version03\2-working\variable check prep_CF.dta", replace
 label data "2018 Epi Info 7 Check for Completeness - Casefinding Form"

@@ -93,5 +93,5 @@ rename genpile =CF
 rename totpile =CF
 
 ** Save dataset to be used in variable completeness quality check
-save "`datapath'\version03\3-output\variable check prep_TF.dta", replace
+save "`datapath'\version03\2-working\variable check prep_TF.dta", replace
 label data "2018 Epi Info 7 Check for Completeness - Tracking Form"

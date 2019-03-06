@@ -40,6 +40,12 @@ import excel using "`datapath'\version03\1-input\20190226rawdataABS2018.xlsx" , 
 
 describe //847 variables; 976 observations as of 26feb2019
 
+** Remove records that are not 'true' abstractions
+drop if pidabs==1|pidabs==2 //dummy data
+drop if etypeabs==. //accidental entry by DA
+drop if dos==. & dom==. //accidental entry by DA
+drop if hospital==. //partial abstraction i.e. DA only completed contact info and event date ONLY so that follow-up can be done on time
+
 ** Note 1: JC used Stata data editor and Variables filter in Stata results window to rename variables
 ** Note 2: pidabs 1 and pidabs 2 contain dummy data
 
@@ -260,13 +266,12 @@ rename beer* =PQI
 rename spir* =PQI
 rename win* =PQI
 
-
 // Below datetime variables created in EI7 at Ashley's request but not needed as Stata can generate these (not added to redcap database)
 // ambcalldt hospdt atscndt frmscndt ecgdt dostos domtom reperfdt heplmwdt aspdt warfdt hepdt pladt o2dt gipdt insudt statdt noacsdt disdt dodtod
 
-
 ** Rename all HR-related variables to end in HR
 rename *da =HR
+
 
 ** Save dataset to be used in variable completeness quality check
 save "`datapath'\version03\2-working\variable check prep_ABS.dta", replace

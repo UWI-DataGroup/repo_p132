@@ -1654,7 +1654,7 @@ label define siteiarc_lab ///
 52 "Hodgkin lymphoma (C81)" 53 "Non-Hodgkin lymphoma (C82-86,C96)" ///
 54 "Immunoproliferative diseases (C88)" 55 "Multiple myeloma (C90)" ///
 56 "Lymphoid leukaemia (C91)" 57 "Myeloid leukaemia (C92-94)" 58 "Leukaemia unspecified (C95)" ///
-59 "Myeloproliferative disorders (MPD)" 60 "Myselodysplastic syndromes (MDS)" ///
+59 "Myeloproliferative disorders (MPD)" 60 "Myelodysplastic syndromes (MDS)" ///
 61 "Other and unspecified (O&U)" ///
 62 "All sites(ALL)" 63 "All sites but skin (ALLbC44)" ///
 64 "D069: CIN 3"
@@ -1814,7 +1814,7 @@ label define sitecr5db_lab ///
 28 "Other male organs (C60,63)" ///
 29 "Other endocrine (C74-75)" ///
 30 "Myeloproliferative disorders (MPD)" ///
-31 "Myselodysplastic syndromes (MDS)" ///
+31 "Myelodysplastic syndromes (MDS)" ///
 32 "D069: CIN 3" ///
 33 "All sites but C44"
 label var sitecr5db "CR5db sites"
